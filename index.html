@@ -432,6 +432,20 @@ function updateEmptyStates() {
       evBtn.onclick = function() { showModal(); };
     }
   }
+  // Events empty state (afisha page)
+  var afText = document.getElementById('events-empty-afisha-text');
+  var afBtn = document.getElementById('events-empty-afisha-btn');
+  if (afText && afBtn) {
+    if (loggedIn) {
+      afText.textContent = 'Будь первым — добавь событие в своём кантоне';
+      afBtn.textContent = '+ Добавить событие';
+      afBtn.onclick = function() { openEventForm(); };
+    } else {
+      afText.textContent = 'Зарегистрируйся чтобы добавить событие в своём кантоне';
+      afBtn.textContent = 'Зарегистрироваться';
+      afBtn.onclick = function() { showModal(); };
+    }
+  }
   // Deals locked screen
   var dealsTitle = document.getElementById('deals-locked-title');
   var dealsSub = document.getElementById('deals-locked-sub');
@@ -511,7 +525,7 @@ function goPage(name) {
   var nav = document.getElementById('n-' + name);
   if (nav) { nav.classList.add('active'); }
   if (name === 'deals') { updateDealsVisibility(); }
-  if (name === 'home') { setTimeout(updateEmptyStates, 50); }
+  if (name === 'home' || name === 'afisha') { setTimeout(updateEmptyStates, 50); }
   window.scrollTo(0, 0);
 }
 
@@ -2280,8 +2294,8 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
       <div style="text-align:center;padding:60px 0;">
         <div style="font-size:48px;margin-bottom:16px;">📅</div>
         <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--charcoal);margin-bottom:8px;">Событий пока нет</div>
-        <div style="font-size:14px;color:var(--mid);margin-bottom:24px;">Зарегистрируйся чтобы добавить событие в своём кантоне</div>
-        <button onclick="showModal()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Зарегистрироваться</button>
+        <div id="events-empty-afisha-text" style="font-size:14px;color:var(--mid);margin-bottom:24px;">Зарегистрируйся чтобы добавить событие в своём кантоне</div>
+        <button id="events-empty-afisha-btn" onclick="showModal()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Зарегистрироваться</button>
       </div>
     </div>
   </div>
