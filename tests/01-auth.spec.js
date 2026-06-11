@@ -5,14 +5,14 @@ const { registerUser, loginUser } = require('./helpers');
 test.describe('БЛОК 1 — Авторизация', () => {
 
   test('1.1 — Главная открывается без логина', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('');
     await expect(page.locator('text=Свои люди')).toBeVisible();
     await expect(page.locator('button:has-text("Вступить")').first()).toBeVisible();
   });
 
   test('1.2-1.4 — Полная регистрация через 3 шага', async ({ page }) => {
     const email = `test_${Date.now()}@slswiss-test.com`;
-    await page.goto('/');
+    await page.goto('');
     await page.click('button.btn-join:has-text("Вступить")');
 
     // Шаг 1
@@ -42,7 +42,7 @@ test.describe('БЛОК 1 — Авторизация', () => {
     const email = process.env.TEST_USER_EMAIL || 'test@slswiss-test.com';
     const pwd = process.env.TEST_USER_PWD || 'TestPass123!';
 
-    await page.goto('/');
+    await page.goto('');
     await page.click('button.btn-login:has-text("Войти")');
     await page.fill('#login-email-input', email);
     await page.fill('#login-pwd-input', pwd);
