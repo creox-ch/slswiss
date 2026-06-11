@@ -90,7 +90,7 @@ function showTaskForm() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,42,.6);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
   overlay.innerHTML =
     '<div style="background:#fff;border-radius:20px;padding:36px;width:540px;max-width:94vw;max-height:90vh;overflow-y:auto;position:relative;">' +
-    '<button onclick="closeOverlay(\'task-form-overlay\')" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
+    '<button id="task-close-btn" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
     '<h2 style="font-family:Plus Jakarta Sans,sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">Разместить задачу</h2>' +
     '<p style="font-size:13px;color:#666;margin-bottom:20px;">Опиши что нужно сделать — участники сообщества предложат помощь</p>' +
     '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Заголовок *</label>' +
@@ -114,6 +114,7 @@ function showTaskForm() {
     '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Задача появится после проверки модератором</p>' +
     '</div>';
   document.body.appendChild(overlay);
+  document.getElementById('task-close-btn').onclick = function() { overlay.remove(); };
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
 }
 
@@ -170,7 +171,7 @@ function showBusinessForm() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,42,.6);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
   overlay.innerHTML =
     '<div style="background:#fff;border-radius:20px;padding:36px;width:560px;max-width:94vw;max-height:90vh;overflow-y:auto;position:relative;">' +
-    '<button onclick="document.getElementById('biz-add-overlay').remove()" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
+    '<button id="biz-close-btn" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
     '<h2 style="font-family:Plus Jakarta Sans,sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">Добавить в каталог</h2>' +
     '<p style="font-size:13px;color:#666;margin-bottom:20px;">Расскажи о своём бизнесе или услугах — русскоязычное сообщество найдёт тебя быстрее</p>' +
     '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Название *</label>' +
@@ -199,6 +200,7 @@ function showBusinessForm() {
     '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором · Бесплатно</p>' +
     '</div>';
   document.body.appendChild(overlay);
+  document.getElementById('biz-close-btn').onclick = function() { overlay.remove(); };
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
 }
 
@@ -267,7 +269,7 @@ function showArticleForm() {
   overlay.id = 'article-form-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,42,.6);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:36px;width:560px;max-width:94vw;max-height:90vh;overflow-y:auto;position:relative;">' +
-    '<button onclick="document.getElementById(\'article-form-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
+    '<button id="art-close-btn" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
     '<h2 style="font-family:Plus Jakarta Sans,sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">Написать статью</h2>' +
     '<p style="font-size:13px;color:#666;margin-bottom:20px;">Поделись опытом жизни в Швейцарии — лучшие статьи получают баллы и значок Эксперта</p>' +
     '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#444;display:block;margin-bottom:6px;">Заголовок *</label>' +
@@ -280,6 +282,7 @@ function showArticleForm() {
     '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Статья будет опубликована после проверки</p>' +
     '</div>';
   document.body.appendChild(overlay);
+  document.getElementById('art-close-btn').onclick = function() { overlay.remove(); };
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
 }
 
@@ -2927,7 +2930,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
     <div>
       <div class="ph-tag" style="background:rgba(29,200,130,.15);border-color:rgba(29,200,130,.3);color:#1DC882;margin-bottom:12px;">🎁 Акции</div>
       <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:34px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:8px;">Акции, скидки <em style="color:#1DC882;font-style:normal;">& бонусы</em></h1>
-      <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:480px;">Зарегистрируйся чтобы узнать больше</p>
+      <p style="color:rgba(255,255,255,.45);font-size:13px;max-width:480px;">Эксклюзивные предложения от партнёров сообщества</p>
     </div>
     <div style="text-align:right;">
       <button onclick="showModal()" style="background:linear-gradient(135deg,#1DC882,#059669);color:#fff;border:none;padding:13px 26px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(29,200,130,.4);">Войти / Зарегистрироваться →</button>
@@ -3773,8 +3776,8 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
     </div>
   </div>
 </div>
-</body>
-</html  <!-- TRANSFER TAB -->
+
+<!-- TRANSFER TAB -->
   <div class="tab-pane" id="exch-transfer">
     <div class="section">
       <div style="background:var(--brand-light);border:1.5px solid var(--brand);border-radius:14px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:var(--brand-dark);">
@@ -3913,144 +3916,6 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
 
       </div><!-- end grid -->
     </div>
-  </div>>
-</html>
-
-<!-- ═══ MODAL ═══ -->
-<div class="modal-overlay" id="modal" style="display:none;" onclick="closeModal(event)">
-  <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('modal').style.display='none'">✕</button>
-    <h2>SoiLüDi Community</h2>
-    <p class="modal-sub">Русскоязычное сообщество Швейцарии</p>
-    <div class="modal-tabs">
-      <div class="modal-tab active" onclick="switchModalTab('login',this)">Войти</div>
-      <div class="modal-tab" onclick="switchModalTab('reg',this)">Регистрация</div>
-    </div>
-
-    <!-- LOGIN -->
-    <div id="m-login">
-      <!-- Telegram — главная кнопка -->
-      <button onclick="loginTelegram()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#2AABEE,#229ED9);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 13.802l-2.95-.924c-.64-.203-.654-.64.136-.95l11.527-4.445c.535-.194 1.002.131.37.765z"/></svg>
-        Войти через Telegram
-      </button>
-      <!-- Google -->
-      <button onclick="loginDemo()" style="width:100%;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:#fff;color:var(--charcoal);font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Войти через Google
-      </button>
-      <div class="or-divider">или email</div>
-      <div style="margin-bottom:8px;"><label class="fl">Email</label><input class="f-input" type="email" id="login-email-input" placeholder="your@email.com" style="width:100%;"></div>
-      <div style="margin-bottom:12px;"><label class="fl">Пароль</label><input class="f-input" type="password" id="login-pwd-input" placeholder="••••••••" style="width:100%;"></div>
-      <button class="btn-hero" style="width:100%;padding:11px;" onclick="this.textContent='Входим...';this.disabled=true;setTimeout(()=>loginDemo(),300)">Войти</button>
-      <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--light);">Нет аккаунта? <a onclick="switchModalTab('reg',null)" style="color:var(--brand);cursor:pointer;font-weight:600;">Зарегистрироваться</a></div>
-    </div>
-
-    <!-- REGISTER -->
-    <div id="m-reg" style="display:none;">
-      <div class="reg-progress">
-        <div class="reg-bar done" id="rb1"></div>
-        <div class="reg-bar" id="rb2"></div>
-        <div class="reg-bar" id="rb3"></div>
-      </div>
-      <div class="reg-step-lbl" id="reg-lbl">Шаг 1 из 3 — Основное</div>
-
-      <!-- Step 1 -->
-      <div id="rs1">
-        <div class="oauth-btns"><button class="oauth-btn">🔵 Google</button><button class="oauth-btn">🍎 Apple</button></div>
-        <div class="or-divider">или</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-          <div><label class="fl">Имя</label><input class="f-input" type="text" placeholder="Имя" style="width:100%;"></div>
-          <div><label class="fl">Фамилия</label><input class="f-input" type="text" placeholder="Фамилия" style="width:100%;"></div>
-        </div>
-        <div style="margin-bottom:8px;"><label class="fl">Email</label><input class="f-input" type="email" placeholder="your@email.com" style="width:100%;"></div>
-        <div style="margin-bottom:12px;"><label class="fl">Пароль</label><input class="f-input" type="password" placeholder="••••••••" style="width:100%;"></div>
-        <button class="btn-hero" style="width:100%;padding:11px;" onclick="handleRegStep1()">Далее →</button>
-      </div>
-
-      <!-- Step 2 -->
-      <div id="rs2" style="display:none;">
-        <div style="margin-bottom:8px;"><label class="fl">Кантон проживания</label>
-          <select class="f-input" style="width:100%;"><option value="">— Выбери кантон —</option><option>Aargau</option><option>Appenzell AR</option><option>Appenzell IR</option><option>Basel-Land</option><option>Basel-Stadt</option><option>Bern</option><option>Fribourg</option><option>Geneva</option><option>Glarus</option><option>Graubünden</option><option>Jura</option><option>Luzern</option><option>Neuchâtel</option><option>Nidwalden</option><option>Obwalden</option><option>Schaffhausen</option><option>Schwyz</option><option>Solothurn</option><option>St.Gallen</option><option>Thurgau</option><option>Ticino</option><option>Uri</option><option>Valais</option><option>Vaud</option><option>Zug</option><option>Zürich</option></select>
-        </div>
-        <div style="margin-bottom:10px;"><label class="fl">Почтовый индекс PLZ / NPA</label><input class="f-input" type="text" placeholder="8001" maxlength="4" style="width:100%;"></div>
-        <div style="background:var(--brand-light);border-radius:10px;padding:10px 12px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--brand-dark);margin-bottom:3px;">🎯 Зачем индекс?</div><div style="font-size:11px;color:var(--mid);line-height:1.5;">Помогает найти бадди, события и сервисы рядом с вами.</div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button class="btn-login" style="padding:10px;" onclick="regStep(1)">← Назад</button>
-          <button class="btn-hero" style="padding:10px;" onclick="handleRegStep2()">Далее →</button>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div id="rs3" style="display:none;">
-        <!-- ИНТЕРЕСЫ — первые -->
-        <div style="margin-bottom:12px;">
-          <label class="fl">Интересы — выберите несколько</label>
-          <div style="display:flex;flex-wrap:wrap;margin-top:6px;">
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🏔️ Походы</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🏋️ Спорт</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🍽️ Рестораны</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">📚 Книги</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🎭 Культура</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">💼 Бизнес</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🗣️ Языки</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">💻 IT</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🚴 Велосипед</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🎵 Музыка</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">✈️ Путешествия</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">👶 Дети</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🍷 Вино</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🎨 Искусство</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🏂 Лыжи</span>
-          </div>
-        </div>
-        <!-- ЖИВОТНЫЕ -->
-        <div style="margin-bottom:10px;">
-          <label class="fl">Животные 🐾</label>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🐕 Собака</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🐈 Кошка</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🐇 Другое животное</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🚫 Нет</span>
-          </div>
-        </div>
-        <!-- ДЕТИ -->
-        <div style="margin-bottom:8px;">
-          <label class="fl">Дети 👶</label>
-          <select class="f-input" style="width:100%;">
-            <option value="">Нет детей</option>
-            <option>1 ребёнок</option>
-            <option>2 детей</option>
-            <option>3 и более</option>
-          </select>
-        </div>
-        <div style="margin-bottom:14px;">
-          <label class="fl">Возраст детей</label>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
-            <span class="int-pill" onclick="this.classList.toggle('sel')">👶 до 3 лет</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🧒 3–7 лет</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">📚 7–14 лет</span>
-            <span class="int-pill" onclick="this.classList.toggle('sel')">🧑 14+ лет</span>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button class="btn-login" style="padding:10px;" onclick="handleRegStep2()">← Назад</button>
-          <button class="btn-hero" style="padding:10px;" onclick="(function(){
-  var e=document.getElementById('rs1-email');
-  var p=document.getElementById('rs1-pwd');
-  var fn=document.getElementById('rs1-first');
-  var ln=document.getElementById('rs1-last');
-  var canton=document.getElementById('rs2-canton');
-  var plz=document.getElementById('rs2-plz');
-  if(e&&p&&e.value&&p.value){
-    sbSignUp(e.value,p.value,fn?fn.value:'',ln?ln.value:'',canton?canton.value:'',plz?plz.value:'');
-  } else { loginDemo(); }
-})()">Создать аккаунт 🎉</button>
-        </div>
-      </div>
-    </div>
   </div>
-</div>
-
 </body>
 </html>
