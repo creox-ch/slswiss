@@ -69,6 +69,215 @@ function sbSignUp(email, password, firstName, lastName, canton, plz) {
   });
 }
 
+function createTask() {
+  if (!_profile) { showModal(); return; }
+  showTaskForm();
+}
+
+function showTaskForm() {
+  if (document.getElementById('task-form-overlay')) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'task-form-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,42,.6);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:20px;padding:36px;width:540px;max-width:94vw;max-height:90vh;overflow-y:auto;position:relative;">' +
+    '<button onclick="document.getElementById('task-form-overlay').remove()" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
+    '<h2 style="font-family:Plus Jakarta Sans,sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">Разместить задачу</h2>' +
+    '<p style="font-size:13px;color:#666;margin-bottom:20px;">Опиши что нужно сделать — участники сообщества предложат помощь</p>' +
+    '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Заголовок *</label>' +
+    '<input id="task-title" type="text" placeholder="Например: Нужна помощь с переводом документов" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div>' +
+    '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Категория</label>' +
+    '<select id="task-cat" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;">' +
+    '<option>🗣️ Перевод</option><option>💻 IT</option><option>📋 Документы</option>' +
+    '<option>🏠 Быт и ремонт</option><option>🚗 Транспорт</option><option>👶 Дети</option>' +
+    '<option>💼 Бизнес</option><option>🎨 Дизайн</option><option>📸 Фото/видео</option><option>🔧 Другое</option></select></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">' +
+    '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Кантон</label>' +
+    '<select id="task-canton" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;">' +
+    '<option>🌐 Онлайн</option><option>Zürich</option><option>Bern</option><option>Luzern</option>' +
+    '<option>Basel</option><option>Geneva</option><option>Zug</option><option>Ticino</option>' +
+    '<option>Vaud</option><option>Valais</option><option>St.Gallen</option><option>Любой</option></select></div>' +
+    '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Бюджет (CHF)</label>' +
+    '<input id="task-budget" type="number" placeholder="0 = договорная" min="0" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div></div>' +
+    '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Описание</label>' +
+    '<textarea id="task-desc" rows="4" placeholder="Подробно опиши задачу..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;"></textarea></div>' +
+    '<button onclick="submitTask()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Разместить задачу →</button>' +
+    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Задача появится после проверки модератором</p>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+}
+
+function submitTask() {
+  var title = document.getElementById('task-title') ? document.getElementById('task-title').value : '';
+  var desc = document.getElementById('task-desc') ? document.getElementById('task-desc').value : '';
+  var cat = document.getElementById('task-cat') ? document.getElementById('task-cat').value : '';
+  var canton = document.getElementById('task-canton') ? document.getElementById('task-canton').value : '';
+  var budget = document.getElementById('task-budget') ? parseFloat(document.getElementById('task-budget').value) || 0 : 0;
+  if (!title) { alert('Заполни заголовок'); return; }
+  var overlay = document.getElementById('task-form-overlay');
+  if (overlay) overlay.remove();
+  if (_supabase && _profile) {
+    _supabase.from('tasks').insert({
+      title: title,
+      description: desc,
+      category: cat,
+      canton: canton,
+      budget: budget,
+      budget_type: budget > 0 ? 'fixed' : 'negotiable',
+      created_by: _profile.id,
+      author_name: (_profile.first_name || '') + ' ' + (_profile.last_name || ''),
+      is_active: true
+    }).then(function(res) {
+      if (res.error) { showNotif('Ошибка: ' + res.error.message, 'error'); return; }
+      showNotif('✅ Задача размещена и отправлена на модерацию!');
+    });
+  } else {
+    showNotif('✅ Задача отправлена на модерацию!');
+  }
+}
+
+// ================================================================
+// ADD BUSINESS / SERVICE
+// ================================================================
+function addBusiness() {
+  if (!_profile) { showModal(); return; }
+  showBusinessForm();
+}
+
+function showBusinessForm() {
+  if (document.getElementById('biz-add-overlay')) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'biz-add-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,42,.6);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:20px;padding:36px;width:560px;max-width:94vw;max-height:90vh;overflow-y:auto;position:relative;">' +
+    '<button onclick="document.getElementById('biz-add-overlay').remove()" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
+    '<h2 style="font-family:Plus Jakarta Sans,sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">Добавить в каталог</h2>' +
+    '<p style="font-size:13px;color:#666;margin-bottom:20px;">Расскажи о своём бизнесе или услугах — русскоязычное сообщество найдёт тебя быстрее</p>' +
+    '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Название *</label>' +
+    '<input id="biz-name" type="text" placeholder="Название бизнеса или имя специалиста" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">' +
+    '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Категория</label>' +
+    '<select id="biz-cat" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;">' +
+    '<option>⚖️ Юриспруденция</option><option>🍽️ Рестораны</option><option>💻 IT</option>' +
+    '<option>🏠 Недвижимость</option><option>👩‍⚕️ Медицина</option><option>📚 Образование</option>' +
+    '<option>💇 Красота</option><option>💰 Финансы</option><option>🗣️ Переводы</option>' +
+    '<option>🧠 Психология</option><option>🔨 Ремонт</option><option>✈️ Туризм</option>' +
+    '<option>🔧 Другое</option></select></div>' +
+    '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Кантон</label>' +
+    '<select id="biz-canton" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;">' +
+    '<option>🌐 Онлайн</option><option>Zürich</option><option>Bern</option><option>Luzern</option>' +
+    '<option>Basel</option><option>Geneva</option><option>Zug</option><option>Ticino</option>' +
+    '<option>Vaud</option><option>Valais</option><option>St.Gallen</option><option>Вся Швейцария</option></select></div></div>' +
+    '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Описание *</label>' +
+    '<textarea id="biz-desc" rows="4" placeholder="Коротко о том что ты предлагаешь, опыт, специализация..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;"></textarea></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">' +
+    '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Сайт</label>' +
+    '<input id="biz-web" type="url" placeholder="https://" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div>' +
+    '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Telegram</label>' +
+    '<input id="biz-tg" type="text" placeholder="@username" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div></div>' +
+    '<button onclick="submitBusiness()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Добавить в каталог →</button>' +
+    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором · Бесплатно</p>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+}
+
+function submitBusiness() {
+  var name = document.getElementById('biz-name') ? document.getElementById('biz-name').value : '';
+  var desc = document.getElementById('biz-desc') ? document.getElementById('biz-desc').value : '';
+  var cat = document.getElementById('biz-cat') ? document.getElementById('biz-cat').value : '';
+  var canton = document.getElementById('biz-canton') ? document.getElementById('biz-canton').value : '';
+  var web = document.getElementById('biz-web') ? document.getElementById('biz-web').value : '';
+  var tg = document.getElementById('biz-tg') ? document.getElementById('biz-tg').value : '';
+  if (!name || !desc) { alert('Заполни название и описание'); return; }
+  var overlay = document.getElementById('biz-add-overlay');
+  if (overlay) overlay.remove();
+  if (_supabase && _profile) {
+    _supabase.from('services').insert({
+      name: name,
+      category: cat,
+      canton: canton,
+      description: desc,
+      website: web,
+      telegram: tg,
+      owner_id: _profile.id,
+      status: 'pending',
+      is_verified: false
+    }).then(function(res) {
+      if (res.error) { showNotif('Ошибка: ' + res.error.message, 'error'); return; }
+      showNotif('✅ Бизнес добавлен и отправлен на модерацию!');
+    });
+  } else {
+    showNotif('✅ Отправлено на модерацию!');
+  }
+}
+
+function writeArticle() {
+  if (_profile) {
+    // Logged in - show article form modal
+    showArticleForm();
+  } else {
+    showModal();
+  }
+}
+
+function showArticleForm() {
+  // Simple article submission form
+  var overlay = document.createElement('div');
+  overlay.id = 'article-form-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,42,.6);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:36px;width:560px;max-width:94vw;max-height:90vh;overflow-y:auto;position:relative;">' +
+    '<button onclick="document.getElementById(\'article-form-overlay\').remove()" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
+    '<h2 style="font-family:Plus Jakarta Sans,sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">Написать статью</h2>' +
+    '<p style="font-size:13px;color:#666;margin-bottom:20px;">Поделись опытом жизни в Швейцарии — лучшие статьи получают баллы и значок Эксперта</p>' +
+    '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#444;display:block;margin-bottom:6px;">Заголовок *</label>' +
+    '<input type="text" placeholder="Например: Как открыть счёт в Swiss Post" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;" id="art-title"></div>' +
+    '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#444;display:block;margin-bottom:6px;">Тема</label>' +
+    '<select style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;" id="art-topic"><option>Документы</option><option>Жильё</option><option>Работа</option><option>Дети</option><option>Налоги</option><option>Путешествия</option><option>Лайфхаки</option></select></div>' +
+    '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#444;display:block;margin-bottom:6px;">Текст *</label>' +
+    '<textarea placeholder="Расскажи свой опыт..." rows="8" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;" id="art-text"></textarea></div>' +
+    '<button onclick="submitArticle()" style="width:100%;background:#1AABEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Отправить на модерацию →</button>' +
+    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Статья будет опубликована после проверки</p>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
+}
+
+function submitArticle() {
+  var title = document.getElementById('art-title') ? document.getElementById('art-title').value : '';
+  var text = document.getElementById('art-text') ? document.getElementById('art-text').value : '';
+  var topic = document.getElementById('art-topic') ? document.getElementById('art-topic').value : '';
+  if (!title || !text) { alert('Заполни заголовок и текст'); return; }
+  var overlay = document.getElementById('article-form-overlay');
+  if (overlay) overlay.remove();
+  if (_supabase && _profile) {
+    _supabase.from('articles').insert({
+      title: title,
+      topic: topic,
+      content: text,
+      author_id: _profile.id,
+      author_name: (_profile.first_name || '') + ' ' + (_profile.last_name || ''),
+      status: 'pending'
+    }).then(function(res) {
+      if (res.error) { showNotif('Ошибка: ' + res.error.message, 'error'); return; }
+      showNotif('✅ Статья отправлена на модерацию!');
+    });
+  } else {
+    showNotif('✅ Статья отправлена на модерацию!');
+  }
+}
+
+function showNotif(msg, type) {
+  var el = document.createElement('div');
+  var bg = type === 'error' ? '#D52B1E' : '#0A1628';
+  el.style.cssText = 'position:fixed;bottom:24px;right:24px;background:'+bg+';color:#fff;padding:16px 24px;border-radius:14px;font-size:14px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn .3s ease;';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.remove(); }, 4000);
+}
+
 function handleLogin() {
   var email = document.getElementById('login-email-input') ? document.getElementById('login-email-input').value : '';
   var pwd = document.getElementById('login-pwd-input') ? document.getElementById('login-pwd-input').value : '';
@@ -2535,8 +2744,8 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
       <div style="grid-column:1/-1;text-align:center;padding:80px 48px;">
         <div style="font-size:48px;margin-bottom:16px;">🏪</div>
         <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--charcoal);margin-bottom:8px;">Каталог пополняется</div>
-        <div style="font-size:14px;color:var(--mid);margin-bottom:24px;">Зарегистрируйся чтобы добавить свой бизнес первым</div>
-        <button onclick="showModal()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Зарегистрироваться</button>
+        <div style="font-size:14px;color:var(--mid);margin-bottom:24px;">Будь первым — добавь свой бизнес или услуги</div>
+        <button onclick="addBusiness()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">+ Добавить в каталог</button>
       </div>
     </div>
   </div>
@@ -2591,8 +2800,8 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
       <div style="text-align:center;padding:60px 0;">
         <div style="font-size:48px;margin-bottom:16px;">🛠️</div>
         <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--charcoal);margin-bottom:8px;">Задач пока нет</div>
-        <div style="font-size:14px;color:var(--mid);margin-bottom:24px;">Зарегистрируйся чтобы разместить задачу или предложить услугу</div>
-        <button onclick="showModal()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Зарегистрироваться</button>
+        <div style="font-size:14px;color:var(--mid);margin-bottom:24px;">Будь первым — размести задачу для сообщества</div>
+        <button onclick="createTask()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">+ Разместить задачу</button>
       </div>
     </div>
   </div>
@@ -2625,7 +2834,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
 <div class="page" id="page-articles" style="display:none;">
   <div class="page-header">
     <div><div class="ph-tag" style="background:rgba(26,171,239,.15);border-color:rgba(26,171,239,.3);color:var(--brand);">📖 Статьи</div><h1>Статьи, гиды <em>&amp; лайфхаки</em></h1><p>Знания о жизни в Швейцарии от участников сообщества</p></div>
-    <button class="btn-hero" onclick="showModal()">✏️ Написать статью</button>
+    <button class="btn-hero" onclick="writeArticle()">✏️ Написать статью</button>
   </div>
   <div class="filter-bar">
     <span class="filter-label">Тема:</span>
@@ -2641,7 +2850,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
     <!-- Submit banner -->
     <div class="submit-banner">
       <div class="sb-left"><h3>✏️ Поделитесь лайфхаком — получите баллы</h3><p>Напиши полезную статью, топ-подборку или лайфхак о жизни в Швейцарии. Лучшие материалы получают вознаграждение.</p><div class="sb-rewards"><span class="sb-reward">🎁 +200 баллов</span><span class="sb-reward">⭐ Значок Эксперт</span><span class="sb-reward">📌 Топ в ленте</span><span class="sb-reward">💰 Доля от продаж</span></div></div>
-      <button class="btn-write" onclick="showModal()">Опубликовать →</button>
+      <button class="btn-write" onclick="writeArticle()">Опубликовать →</button>
     </div>
     <!-- Featured articles -->
     <div class="sec-head"><div class="sec-title">Популярные <span class="dot">статьи</span></div><a class="see-all">Все →</a></div>
