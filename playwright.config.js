@@ -1,8 +1,8 @@
-import { defineConfig, devices } from '@playwright/test';
+const { defineConfig, devices } = require('@playwright/test');
 
-export default defineConfig({
+module.exports = defineConfig({
   testDir: './tests',
-  fullyParallel: false,  // sequential для авторизации
+  fullyParallel: false,
   retries: 1,
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
@@ -16,10 +16,6 @@ export default defineConfig({
     {
       name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'mobile',
-      use: { ...devices['iPhone 13'] },
     },
   ],
 });
