@@ -22,10 +22,10 @@ async function registerUser(page, email = TEST_EMAIL, pwd = TEST_PASSWORD) {
 
 async function loginUser(page, email, pwd) {
   await page.goto('');
-  await page.click('button:has-text("Войти")');
+  await page.click('button.btn-login');
   await page.fill('#login-email-input', email);
   await page.fill('#login-pwd-input', pwd);
-  await page.click('button:has-text("Войти")');
+  await page.click('#login-modal button:has-text("Войти")');
   await page.waitForTimeout(2000);
 }
 

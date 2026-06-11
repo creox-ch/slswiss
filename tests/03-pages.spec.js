@@ -12,7 +12,8 @@ test.describe('БЛОК 5 — Кантоны', () => {
   test('5.5 — Клик на кантон открывает детальную', async ({ page }) => {
     await page.goto('');
     await page.click('nav li:has-text("Кантоны")');
-    // Кликнуть на Цюрих на карте
+    // TODO: text=Zürich находит 31 элемент. Нужен точный селектор на SVG-карте,
+    // например '#swiss-map-svg [data-canton="ZH"]' — уточнить структуру SVG.
     await page.click('text=Zürich', { timeout: 5000 });
     await page.waitForTimeout(1000);
   });

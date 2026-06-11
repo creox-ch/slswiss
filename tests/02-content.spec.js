@@ -8,7 +8,7 @@ const pwd = process.env.TEST_USER_PWD || 'TestPass123!';
 test.describe('БЛОК 2 — Статьи', () => {
 
   test('2.1 — Без логина "Написать статью" открывает регистрацию', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('');
     await page.click('nav li:has-text("Статьи")');
     await page.click('button:has-text("Написать статью")');
     await expect(page.locator('text=Регистрация')).toBeVisible({ timeout: 3000 });
