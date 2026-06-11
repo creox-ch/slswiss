@@ -36,6 +36,7 @@ function initSupabase() {
           level: 'bronze'
         };
         renderNav(_profile);
+        updateEmptyStates();
       }
     });
   }
@@ -57,6 +58,7 @@ function sbSignIn(email, password) {
     var m = document.getElementById('modal');
     if (m) m.style.display = 'none';
     renderNav(_profile);
+    updateEmptyStates();
     goPage('profile');
   });
 }
@@ -399,6 +401,56 @@ function closeOverlay(id) {
   if (el) el.remove();
 }
 
+function updateEmptyStates() {
+  var loggedIn = !!_profile;
+  var isPremium = loggedIn && _profile.plan && _profile.plan !== 'free';
+  // News empty state (home)
+  var newsText = document.getElementById('news-empty-text');
+  var newsBtn = document.getElementById('news-empty-btn');
+  if (newsText && newsBtn) {
+    if (loggedIn) {
+      newsText.textContent = 'Поделись новостью с сообществом';
+      newsBtn.textContent = '+ Добавить новость';
+      newsBtn.onclick = function() { openEventForm(); };
+    } else {
+      newsText.textContent = 'Зарегистрируйся чтобы быть в курсе событий сообщества';
+      newsBtn.textContent = 'Зарегистрироваться';
+      newsBtn.onclick = function() { showModal(); };
+    }
+  }
+  // Events empty state (home)
+  var evText = document.getElementById('events-empty-home-text');
+  var evBtn = document.getElementById('events-empty-home-btn');
+  if (evText && evBtn) {
+    if (loggedIn) {
+      evText.textContent = 'Будь первым — добавь событие для сообщества';
+      evBtn.textContent = '+ Добавить событие';
+      evBtn.onclick = function() { openEventForm(); };
+    } else {
+      evText.textContent = 'Зарегистрируйся чтобы добавить первое событие';
+      evBtn.textContent = 'Зарегистрироваться';
+      evBtn.onclick = function() { showModal(); };
+    }
+  }
+  // Deals locked screen
+  var dealsTitle = document.getElementById('deals-locked-title');
+  var dealsSub = document.getElementById('deals-locked-sub');
+  var dealsBtn = document.getElementById('deals-locked-btn');
+  if (dealsTitle && dealsSub && dealsBtn) {
+    if (loggedIn && !isPremium) {
+      dealsTitle.textContent = 'Акции доступны Premium участникам';
+      dealsSub.textContent = 'Премиум 19 CHF/мес · Эксклюзивные скидки от партнёров';
+      dealsBtn.textContent = 'Стать Premium →';
+      dealsBtn.onclick = function() { goPage('profile'); };
+    } else if (!loggedIn) {
+      dealsTitle.textContent = 'Зарегистрируйся чтобы узнать больше';
+      dealsSub.textContent = 'Регистрация 1 минута и бесплатная';
+      dealsBtn.textContent = 'Войти / Зарегистрироваться →';
+      dealsBtn.onclick = function() { showModal(); };
+    }
+  }
+}
+
 function handleLogin() {
   var email = document.getElementById('login-email-input') ? document.getElementById('login-email-input').value : '';
   var pwd = document.getElementById('login-pwd-input') ? document.getElementById('login-pwd-input').value : '';
@@ -601,6 +653,7 @@ function logOut() {
   nr.appendChild(b2);
   goPage('home');
   initSupabase();
+  updateEmptyStates();
 }
 function renderNav(p) {
   var nr = document.getElementById('nav-right');
@@ -2147,11 +2200,11 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
       <div class="sec-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
         <div class="sec-title">Новости <span class="dot">&</span> объявления</div>
       </div>
-      <div style="text-align:center;padding:60px;background:#fff;border-radius:18px;border:1px solid #E8EAED;">
+      <div id="news-empty-state" style="text-align:center;padding:60px;background:#fff;border-radius:18px;border:1px solid #E8EAED;">
         <div style="font-size:48px;margin-bottom:16px;">📰</div>
-        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--charcoal);margin-bottom:8px;">Новости появятся скоро</div>
-        <div style="font-size:14px;color:var(--mid);margin-bottom:24px;">Зарегистрируйся чтобы быть в курсе событий сообщества</div>
-        <button onclick="showModal()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Зарегистрироваться</button>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--charcoal);margin-bottom:8px;">Новостей пока нет</div>
+        <div style="font-size:14px;color:var(--mid);margin-bottom:24px;" id="news-empty-text">Зарегистрируйся чтобы быть в курсе событий сообщества</div>
+        <button id="news-empty-btn" onclick="showModal()" style="background:var(--brand);color:#fff;border:none;padding:13px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Зарегистрироваться</button>
       </div>
     </div>
   <div>
@@ -2160,10 +2213,11 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
         <div class="sec-title">Ближайшие <span class="dot">события</span></div>
         <a onclick="goPage('afisha')" style="font-size:13px;color:var(--brand);cursor:pointer;font-weight:600;">Все события →</a>
       </div>
-      <div style="text-align:center;padding:40px;background:#fff;border-radius:18px;border:1px solid #E8EAED;">
+      <div id="events-empty-home" style="text-align:center;padding:40px;background:#fff;border-radius:18px;border:1px solid #E8EAED;">
         <div style="font-size:40px;margin-bottom:12px;">📅</div>
         <div style="font-size:16px;font-weight:700;color:var(--charcoal);margin-bottom:6px;">Событий пока нет</div>
-        <div style="font-size:13px;color:var(--mid);">Зарегистрируйся чтобы добавить первое событие</div>
+        <div id="events-empty-home-text" style="font-size:13px;color:var(--mid);margin-bottom:16px;">Зарегистрируйся чтобы добавить первое событие</div>
+        <button id="events-empty-home-btn" onclick="showModal()" style="background:var(--brand);color:#fff;border:none;padding:11px 24px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Зарегистрироваться</button>
       </div>
     </div>
   </div>
@@ -3062,9 +3116,9 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
   <div <div id="deals-locked" style="padding:48px;display:none;align-items:center;justify-content:center;">
     <div style="text-align:center;max-width:460px;">
       <div style="font-size:52px;margin-bottom:20px;">🔒</div>
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:var(--charcoal);margin-bottom:10px;">Зарегистрируйся чтобы узнать больше</div>
-      <div style="font-size:14px;color:var(--mid);margin-bottom:28px;">Регистрация 1 минута и бесплатная</div>
-      <button onclick="showModal()" style="background:var(--brand);color:#fff;padding:14px 36px;border-radius:14px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,174,239,.35);">Войти / Зарегистрироваться →</button>
+      <div id="deals-locked-title" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:var(--charcoal);margin-bottom:10px;">Зарегистрируйся чтобы узнать больше</div>
+      <div id="deals-locked-sub" style="font-size:14px;color:var(--mid);margin-bottom:28px;">Регистрация 1 минута и бесплатная</div>
+      <button id="deals-locked-btn" onclick="showModal()" style="background:var(--brand);color:#fff;padding:14px 36px;border-radius:14px;font-size:15px;font-weight:700;border:none;cursor:pointer;font-family:Inter,sans-serif;box-shadow:0 4px 20px rgba(0,174,239,.35);">Войти / Зарегистрироваться →</button>
     </div>
   </div>
   </div>
