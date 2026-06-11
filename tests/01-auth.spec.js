@@ -33,23 +33,21 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await expect(page.locator('text=Шаг 3')).toBeVisible();
     await page.click('button:has-text("Создать аккаунт")');
 
-    // Ожидаем уведомление или редирект
     await page.waitForTimeout(3000);
   });
 
   test('1.6 — Вход существующего пользователя', async ({ page }) => {
-    // Используется заранее созданный тестовый пользователь
     const email = process.env.TEST_USER_EMAIL || 'test@slswiss-test.com';
     const pwd = process.env.TEST_USER_PWD || 'TestPass123!';
 
     await page.goto('');
-    await page.click('button.btn-login:has-text("Войти")');
+    await page.click('button.btn-login');
     await page.fill('#login-email-input', email);
     await page.fill('#login-pwd-input', pwd);
-    await page.click('button:has-text("Войти")');
+    // Submit-кнопка "Войти" — последняя на странице
+    await page.getByRole('button', { name: 'Войти', exact: true }).last().click();
     await page.waitForTimeout(2000);
 
-    // Проверяем что появился аватар (залогинены)
     await expect(page.locator('button:has-text("Выйти")')).toBeVisible({ timeout: 5000 });
   });
 

@@ -25,7 +25,8 @@ async function loginUser(page, email, pwd) {
   await page.click('button.btn-login');
   await page.fill('#login-email-input', email);
   await page.fill('#login-pwd-input', pwd);
-  await page.click('#login-modal button:has-text("Войти")');
+  // Submit-кнопка "Войти" — последняя на странице (в модалке после тэгов/соц-логинов)
+  await page.getByRole('button', { name: 'Войти', exact: true }).last().click();
   await page.waitForTimeout(2000);
 }
 
