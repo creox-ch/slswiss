@@ -9,14 +9,14 @@ test.describe('БЛОК 2 — Статьи', () => {
 
   test('2.1 — Без логина "Написать статью" открывает регистрацию', async ({ page }) => {
     await page.goto('/');
-    await page.click('a:has-text("Статьи")');
+    await page.click('nav li:has-text("Статьи")');
     await page.click('button:has-text("Написать статью")');
     await expect(page.locator('text=Регистрация')).toBeVisible({ timeout: 3000 });
   });
 
   test('2.2-2.3 — Залогинен: открывается форма, отправка статьи', async ({ page }) => {
     await loginUser(page, email, pwd);
-    await page.click('a:has-text("Статьи")');
+    await page.click('nav li:has-text("Статьи")');
     await page.click('button:has-text("Написать статью")');
 
     await expect(page.locator('#art-title')).toBeVisible({ timeout: 3000 });
@@ -28,7 +28,7 @@ test.describe('БЛОК 2 — Статьи', () => {
 
   test('2.4 — Валидация: пустой заголовок', async ({ page }) => {
     await loginUser(page, email, pwd);
-    await page.click('a:has-text("Статьи")');
+    await page.click('nav li:has-text("Статьи")');
     await page.click('button:has-text("Написать статью")');
     page.on('dialog', async dialog => {
       expect(dialog.message()).toContain('Заполни');
@@ -42,7 +42,7 @@ test.describe('БЛОК 3 — Биржа задач', () => {
 
   test('3.2-3.3 — Создание задачи залогиненным', async ({ page }) => {
     await loginUser(page, email, pwd);
-    await page.click('a:has-text("Биржа")');
+    await page.click('nav li:has-text("Биржа")');
     await page.click('button:has-text("Разместить задачу")');
 
     await expect(page.locator('#task-title')).toBeVisible({ timeout: 3000 });
@@ -58,7 +58,7 @@ test.describe('БЛОК 4 — Каталог', () => {
 
   test('4.2-4.3 — Добавление бизнеса', async ({ page }) => {
     await loginUser(page, email, pwd);
-    await page.click('a:has-text("Каталог")');
+    await page.click('nav li:has-text("Каталог")');
     await page.click('button:has-text("Добавить в каталог")');
 
     await expect(page.locator('#biz-name')).toBeVisible({ timeout: 3000 });
