@@ -511,6 +511,7 @@ function goPage(name) {
   var nav = document.getElementById('n-' + name);
   if (nav) { nav.classList.add('active'); }
   if (name === 'deals') { updateDealsVisibility(); }
+  if (name === 'home') { setTimeout(updateEmptyStates, 50); }
   window.scrollTo(0, 0);
 }
 
