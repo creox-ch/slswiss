@@ -70,8 +70,17 @@ function sbSignUp(email, password, firstName, lastName, canton, plz) {
 }
 
 function createTask() {
-  if (!_profile) { showModal(); return; }
-  showTaskForm();
+  if (_profile) { showTaskForm(); return; }
+  if (_supabase) {
+    _supabase.auth.getSession().then(function(res) {
+      if (res.data && res.data.session) {
+        var user = res.data.session.user;
+        _profile = { first_name: (user.user_metadata && user.user_metadata.first_name) || user.email.split('@')[0], last_name: (user.user_metadata && user.user_metadata.last_name) || '', email: user.email, id: user.id, plan: 'free', points: 0, level: 'bronze' };
+        renderNav(_profile);
+        showTaskForm();
+      } else { showModal(); }
+    });
+  } else { showModal(); }
 }
 
 function showTaskForm() {
@@ -141,8 +150,17 @@ function submitTask() {
 // ADD BUSINESS / SERVICE
 // ================================================================
 function addBusiness() {
-  if (!_profile) { showModal(); return; }
-  showBusinessForm();
+  if (_profile) { showBusinessForm(); return; }
+  if (_supabase) {
+    _supabase.auth.getSession().then(function(res) {
+      if (res.data && res.data.session) {
+        var user = res.data.session.user;
+        _profile = { first_name: (user.user_metadata && user.user_metadata.first_name) || user.email.split('@')[0], last_name: (user.user_metadata && user.user_metadata.last_name) || '', email: user.email, id: user.id, plan: 'free', points: 0, level: 'bronze' };
+        renderNav(_profile);
+        showBusinessForm();
+      } else { showModal(); }
+    });
+  } else { showModal(); }
 }
 
 function showBusinessForm() {
@@ -215,9 +233,29 @@ function submitBusiness() {
 }
 
 function writeArticle() {
+  // Check _profile first, then check Supabase session as fallback
   if (_profile) {
-    // Logged in - show article form modal
     showArticleForm();
+    return;
+  }
+  // Maybe session exists but _profile not set yet
+  if (_supabase) {
+    _supabase.auth.getSession().then(function(res) {
+      if (res.data && res.data.session) {
+        var user = res.data.session.user;
+        _profile = {
+          first_name: (user.user_metadata && user.user_metadata.first_name) || user.email.split('@')[0],
+          last_name: (user.user_metadata && user.user_metadata.last_name) || '',
+          email: user.email,
+          id: user.id,
+          plan: 'free', points: 0, level: 'bronze'
+        };
+        renderNav(_profile);
+        showArticleForm();
+      } else {
+        showModal();
+      }
+    });
   } else {
     showModal();
   }
