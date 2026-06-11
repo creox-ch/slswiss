@@ -5,7 +5,79 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SoiLüDi — slswiss.ch</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// ================================================================
+// SUPABASE CONFIG
+// ================================================================
+var SUPABASE_URL = 'https://dwcmiommviauwzkhkbki.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_8yyhkkUNIel1LqlwG0vreQ_4Y8Mu3pq';
+var _supabase = null;
+
+function initSupabase() {
+  if (typeof window.supabase !== 'undefined') {
+    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('Supabase connected');
+    _supabase.auth.getSession().then(function(res) {
+      if (res.data && res.data.session) {
+        var user = res.data.session.user;
+        _profile = {
+          first_name: (user.user_metadata && user.user_metadata.first_name) || user.email.split('@')[0],
+          last_name: (user.user_metadata && user.user_metadata.last_name) || '',
+          email: user.email,
+          id: user.id,
+          canton: (user.user_metadata && user.user_metadata.canton) || '',
+          plan: 'free',
+          points: 0,
+          level: 'bronze'
+        };
+        renderNav(_profile);
+      }
+    });
+  }
+}
+
+function sbSignIn(email, password) {
+  if (!_supabase) { loginDemo(); return; }
+  _supabase.auth.signInWithPassword({ email: email, password: password }).then(function(res) {
+    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
+    var user = res.data.user;
+    _profile = {
+      first_name: (user.user_metadata && user.user_metadata.first_name) || user.email.split('@')[0],
+      last_name: (user.user_metadata && user.user_metadata.last_name) || '',
+      email: user.email,
+      id: user.id,
+      canton: (user.user_metadata && user.user_metadata.canton) || '',
+      plan: 'free', points: 0, level: 'bronze'
+    };
+    var m = document.getElementById('modal');
+    if (m) m.style.display = 'none';
+    renderNav(_profile);
+    goPage('profile');
+  });
+}
+
+function sbSignUp(email, password, firstName, lastName, canton, plz) {
+  if (!_supabase) { loginDemo(); return; }
+  _supabase.auth.signUp({
+    email: email,
+    password: password,
+    options: { data: { first_name: firstName, last_name: lastName, canton: canton, plz: plz } }
+  }).then(function(res) {
+    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
+    alert('Проверь email — отправили ссылку подтверждения на ' + email);
+  });
+}
+
+function sbSignOut() {
+  if (_supabase) {
+    _supabase.auth.signOut().then(function() { logOut(); });
+  } else {
+    logOut();
+  }
+}
+
+
 // ================================================================
 // SoiLüDi — slswiss.ch — Main JavaScript
 // ================================================================
@@ -174,6 +246,7 @@ function logOut() {
   nr.appendChild(b1);
   nr.appendChild(b2);
   goPage('home');
+  initSupabase();
 }
 function renderNav(p) {
   var nr = document.getElementById('nav-right');
@@ -3204,7 +3277,17 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button class="btn-login" style="padding:10px;" onclick="handleRegStep2()">← Назад</button>
-          <button class="btn-hero" style="padding:10px;" onclick="loginDemo()">Создать аккаунт 🎉</button>
+          <button class="btn-hero" style="padding:10px;" onclick="(function(){
+  var e=document.getElementById('rs1-email');
+  var p=document.getElementById('rs1-pwd');
+  var fn=document.getElementById('rs1-first');
+  var ln=document.getElementById('rs1-last');
+  var canton=document.getElementById('rs2-canton');
+  var plz=document.getElementById('rs2-plz');
+  if(e&&p&&e.value&&p.value){
+    sbSignUp(e.value,p.value,fn?fn.value:'',ln?ln.value:'',canton?canton.value:'',plz?plz.value:'');
+  } else { loginDemo(); }
+})()">Создать аккаунт 🎉</button>
         </div>
       </div>
     </div>
@@ -3699,7 +3782,17 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button class="btn-login" style="padding:10px;" onclick="handleRegStep2()">← Назад</button>
-          <button class="btn-hero" style="padding:10px;" onclick="loginDemo()">Создать аккаунт 🎉</button>
+          <button class="btn-hero" style="padding:10px;" onclick="(function(){
+  var e=document.getElementById('rs1-email');
+  var p=document.getElementById('rs1-pwd');
+  var fn=document.getElementById('rs1-first');
+  var ln=document.getElementById('rs1-last');
+  var canton=document.getElementById('rs2-canton');
+  var plz=document.getElementById('rs2-plz');
+  if(e&&p&&e.value&&p.value){
+    sbSignUp(e.value,p.value,fn?fn.value:'',ln?ln.value:'',canton?canton.value:'',plz?plz.value:'');
+  } else { loginDemo(); }
+})()">Создать аккаунт 🎉</button>
         </div>
       </div>
     </div>
