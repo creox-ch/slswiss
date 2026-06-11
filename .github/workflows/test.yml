@@ -5,9 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:  # ручной запуск
+  workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # каждый день в 6 утра UTC
+    - cron: '0 6 * * *'
 
 jobs:
   test:
@@ -19,19 +19,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          npm init -y
-          npm install --save-dev @playwright/test
-          npx playwright install --with-deps chromium
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PWD: ${{ secrets.TEST_USER_PWD }}
           TEST_URL: https://creox-ch.github.io/slswiss/
-        run: npx playwright test --reporter=html,list
+        run: npx playwright test
 
       - name: Upload report
         if: always()
