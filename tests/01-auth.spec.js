@@ -15,6 +15,9 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await page.goto('');
     await page.click('button.btn-join:has-text("Вступить")');
 
+    // Универсальная модалка открывается на табе "Войти". Переключаем на "Регистрация".
+    await page.getByRole('button', { name: 'Регистрация', exact: true }).first().click();
+
     // Шаг 1
     await expect(page.locator('text=Шаг 1')).toBeVisible();
     await page.fill('#rs1-email', email);
@@ -44,7 +47,6 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await page.click('button.btn-login');
     await page.fill('#login-email-input', email);
     await page.fill('#login-pwd-input', pwd);
-    // Submit-кнопка "Войти" — последняя на странице
     await page.getByRole('button', { name: 'Войти', exact: true }).last().click();
     await page.waitForTimeout(2000);
 

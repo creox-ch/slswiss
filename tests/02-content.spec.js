@@ -11,7 +11,9 @@ test.describe('БЛОК 2 — Статьи', () => {
     await page.goto('');
     await page.click('nav li:has-text("Статьи")');
     await page.click('button:has-text("Написать статью")');
-    await expect(page.locator('text=Регистрация')).toBeVisible({ timeout: 3000 });
+    // Открывается auth-модалка (универсальная, табы Войти/Регистрация).
+    // Проверяем что появилась email-форма логина.
+    await expect(page.locator('#login-email-input')).toBeVisible({ timeout: 3000 });
   });
 
   test('2.2-2.3 — Залогинен: открывается форма, отправка статьи', async ({ page }) => {
@@ -49,7 +51,8 @@ test.describe('БЛОК 3 — Биржа задач', () => {
     await page.fill('#task-title', 'Тест задача ' + Date.now());
     await page.fill('#task-desc', 'Описание тестовой задачи');
     await page.fill('#task-budget', '100');
-    await page.click('button:has-text("Разместить задачу")');
+    // Submit "Разместить задачу →" — последняя кнопка с этим текстом (в модалке).
+    await page.locator('button:has-text("Разместить задачу")').last().click();
     await expect(page.locator('text=Задача размещена')).toBeVisible({ timeout: 5000 });
   });
 });
@@ -64,7 +67,8 @@ test.describe('БЛОК 4 — Каталог', () => {
     await expect(page.locator('#biz-name')).toBeVisible({ timeout: 3000 });
     await page.fill('#biz-name', 'Тест Бизнес ' + Date.now());
     await page.fill('#biz-desc', 'Описание тестового бизнеса');
-    await page.click('button:has-text("Добавить в каталог")');
+    // Submit — последняя кнопка с этим текстом
+    await page.locator('button:has-text("Добавить в каталог")').last().click();
     await expect(page.locator('text=Бизнес добавлен')).toBeVisible({ timeout: 5000 });
   });
 });
