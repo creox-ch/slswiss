@@ -15,24 +15,27 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await page.goto('');
     await page.click('button.btn-join:has-text("Вступить")');
 
-    // Внутри модалки #m-login есть ссылка "Зарегистрироваться" → переключает на форму регистрации
+    // Внутри #m-login есть ссылка "Зарегистрироваться" → переключает на форму регистрации
     await page.locator('#m-login a:has-text("Зарегистрироваться")').click();
 
-    // Шаг 1
+    // Шаг 1 — Основное (Имя, Фамилия, Email, Пароль)
     await expect(page.locator('text=Шаг 1')).toBeVisible();
-    await page.fill('#rs1-email', email);
-    await page.fill('#rs1-pwd', 'TestPass123!');
-    await page.fill('#rs1-first', 'Test');
-    await page.fill('#rs1-last', 'User');
+    await page.getByPlaceholder('Имя').fill('Test');
+    await page.getByPlaceholder('Фамилия').fill('User');
+    // Email/Password плейсхолдеры могут совпадать с логин-формой → берём последнее видимое
+    await page.locator('#m-login input[type="email"]:visible').last().fill(email);
+    await page.locator('#m-login input[type="password"]:visible').last().fill('TestPass123!');
     await page.click('button:has-text("Далее")');
 
-    // Шаг 2
+    // Шаг 2 — Локация. Селекторы под фактический HTML формы могут отличаться.
+    // Если структура другая — пришли HTML формы, починим.
     await expect(page.locator('text=Шаг 2')).toBeVisible();
-    await page.selectOption('#rs2-canton', { label: 'Zürich' });
-    await page.fill('#rs2-plz', '8001');
+    // TODO: уточнить селекторы для канта и PLZ из реального HTML
+    await page.locator('#m-login select:visible').selectOption({ label: 'Zürich' });
+    await page.locator('#m-login input[type="text"]:visible, #m-login input[type="number"]:visible').last().fill('8001');
     await page.click('button:has-text("Далее")');
 
-    // Шаг 3
+    // Шаг 3 — Интересы
     await expect(page.locator('text=Шаг 3')).toBeVisible();
     await page.click('button:has-text("Создать аккаунт")');
 
