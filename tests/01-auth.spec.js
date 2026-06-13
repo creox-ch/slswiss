@@ -28,10 +28,10 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await page.locator('input[type="password"]:visible').fill('TestPass123!');
     await page.click('button:has-text("Далее")');
 
-    // Шаг 2 — Локация (Кантон, PLZ). Скоуп на модалку регистрации #m-reg.
+    // Шаг 2 — Локация (Кантон, PLZ). Скоуп на контейнер шага #rs2.
     await expect(page.locator('text=Шаг 2')).toBeVisible();
-    await page.locator('#m-reg select').selectOption({ label: 'Zürich' });
-    await page.locator('#m-reg input:visible').last().fill('8001');
+    await page.locator('#rs2 select').selectOption({ label: 'Zürich' });
+    await page.locator('#rs2 input').fill('8001');
     await page.click('button:has-text("Далее")');
 
     // Шаг 3 — Интересы
