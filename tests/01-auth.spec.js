@@ -15,8 +15,8 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await page.goto('');
     await page.click('button.btn-join:has-text("Вступить")');
 
-    // Универсальная модалка открывается на табе "Войти". Переключаем на "Регистрация".
-    await page.getByRole('button', { name: 'Регистрация', exact: true }).first().click();
+    // Модалка открывается на табе "Войти". Кликаем ссылку "Зарегистрироваться" внизу.
+    await page.getByText('Зарегистрироваться', { exact: true }).click();
 
     // Шаг 1
     await expect(page.locator('text=Шаг 1')).toBeVisible();
