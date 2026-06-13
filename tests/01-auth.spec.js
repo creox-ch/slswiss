@@ -22,17 +22,16 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await expect(page.locator('text=Шаг 1')).toBeVisible();
     await page.getByPlaceholder('Имя').fill('Test');
     await page.getByPlaceholder('Фамилия').fill('User');
-    // Email/Password плейсхолдеры могут совпадать с логин-формой → берём последнее видимое
-    await page.locator('#m-login input[type="email"]:visible').last().fill(email);
-    await page.locator('#m-login input[type="password"]:visible').last().fill('TestPass123!');
+    // На странице есть login-форма и registration-форма с одинаковыми плейсхолдерами.
+    // Login скрыт (другой таб), поэтому :visible даст только regstration-поля.
+    await page.locator('input[type="email"]:visible').fill(email);
+    await page.locator('input[type="password"]:visible').fill('TestPass123!');
     await page.click('button:has-text("Далее")');
 
-    // Шаг 2 — Локация. Селекторы под фактический HTML формы могут отличаться.
-    // Если структура другая — пришли HTML формы, починим.
+    // Шаг 2 — Локация (Кантон, PLZ)
     await expect(page.locator('text=Шаг 2')).toBeVisible();
-    // TODO: уточнить селекторы для канта и PLZ из реального HTML
-    await page.locator('#m-login select:visible').selectOption({ label: 'Zürich' });
-    await page.locator('#m-login input[type="text"]:visible, #m-login input[type="number"]:visible').last().fill('8001');
+    await page.locator('select:visible').selectOption({ label: 'Zürich' });
+    await page.locator('input:visible').last().fill('8001');
     await page.click('button:has-text("Далее")');
 
     // Шаг 3 — Интересы
