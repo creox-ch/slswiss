@@ -15,8 +15,8 @@ test.describe('БЛОК 1 — Авторизация', () => {
     await page.goto('');
     await page.click('button.btn-join:has-text("Вступить")');
 
-    // Модалка открывается на табе "Войти". Кликаем ссылку "Зарегистрироваться" внизу.
-    await page.getByText('Зарегистрироваться', { exact: true }).click();
+    // Внутри модалки #m-login есть ссылка "Зарегистрироваться" → переключает на форму регистрации
+    await page.locator('#m-login a:has-text("Зарегистрироваться")').click();
 
     // Шаг 1
     await expect(page.locator('text=Шаг 1')).toBeVisible();
