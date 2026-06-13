@@ -26,13 +26,13 @@ test.describe('БЛОК 1 — Авторизация', () => {
     // Login скрыт (другой таб), поэтому :visible даст только regstration-поля.
     await page.locator('input[type="email"]:visible').fill(email);
     await page.locator('input[type="password"]:visible').fill('TestPass123!');
-    await page.click('button:has-text("Далее")');
+    await page.locator("button:has-text(\"Далее\"):visible").click();
 
     // Шаг 2 — Локация (Кантон, PLZ). Скоуп на контейнер шага #rs2.
     await expect(page.locator('text=Шаг 2')).toBeVisible();
     await page.locator('#rs2 select').selectOption({ label: 'Zürich' });
     await page.locator('#rs2 input').fill('8001');
-    await page.click('button:has-text("Далее")');
+    await page.locator("button:has-text(\"Далее\"):visible").click();
 
     // Шаг 3 — Интересы
     await expect(page.locator('text=Шаг 3')).toBeVisible();
