@@ -675,9 +675,11 @@ function handleRegFinish() { loginDemo(); }
 // ================================================================
 function loginGoogle() {
   if (!_supabase) { loginDemo(); return; }
-  // OAuth-редирект на Google. После возврата на Site URL (настроен в Supabase)
-  // supabase-js сам подхватит сессию из URL, а initSupabase() построит профиль.
-  _supabase.auth.signInWithOAuth({ provider: 'google' }).then(function(res) {
+  // Явный redirectTo на ТЕКУЩУЮ страницу (без #/?), иначе Supabase вернёт на
+  // Site URL по умолчанию — а если там корень creox-ch.github.io, получаем 404
+  // (сайт лежит в /slswiss/). Этот адрес должен быть в Redirect URLs в Supabase.
+  var returnTo = window.location.href.split('#')[0].split('?')[0];
+  _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: returnTo } }).then(function(res) {
     if (res.error) { alert('Ошибка входа через Google: ' + res.error.message); }
   });
 }
