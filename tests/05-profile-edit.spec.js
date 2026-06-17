@@ -154,6 +154,9 @@ test.describe('Профиль — редактирование (залогине
     await expect(page.getByText('Профиль обновлён')).toBeVisible();
     // renderNav(_profile) перерисовывает шапку с first_name.
     await expect(page.locator('#nav-right')).toContainText(newName);
+    // Регрессия: левая карточка профиля тоже должна отражать новое имя
+    // (раньше была захардкожена «Анна Иванова»).
+    await expect(page.locator('.p-name')).toContainText(newName);
   });
 
   // ─── БЛОК 5 — Перезагрузка / сессия ───
