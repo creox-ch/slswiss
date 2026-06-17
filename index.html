@@ -19,6 +19,11 @@ var SUPABASE_ANON_KEY = 'sb_publishable_8yyhkkUNIel1LqlwG0vreQ_4Y8Mu3pq';
 var _supabase = null;
 
 function initSupabase() {
+  // SDK (внешний скрипт) может догрузиться позже готовности страницы — гонка.
+  // Если его ещё нет, подождём и повторим, пока не появится.
+  if (typeof window.supabase === 'undefined') { setTimeout(initSupabase, 50); return; }
+  // Уже подключены — не создаём клиент повторно.
+  if (_supabase) { return; }
   if (typeof window.supabase !== 'undefined') {
     _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     console.log('Supabase connected');
@@ -1462,6 +1467,10 @@ function addGoal() {
 // INIT — runs after DOM is ready
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
+  // Подключаемся к Supabase при загрузке страницы (создаёт _supabase и
+  // восстанавливает сессию). Без этого вход сваливается в demo-режим, а
+  // сохранение профиля отвечает «не авторизован».
+  initSupabase();
   // Check Stripe redirect
   try {
     var params = new URLSearchParams(window.location.search);
