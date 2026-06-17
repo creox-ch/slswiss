@@ -35,6 +35,14 @@ function initSupabase() {
           points: 0,
           level: 'bronze'
         };
+        // Fetch full profile from DB
+        _supabase.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
+          if (r.data) {
+            Object.assign(_profile, r.data);
+            _profile.email = user.email;
+            renderNav(_profile);
+          }
+        });
         renderNav(_profile);
         updateEmptyStates();
       }
@@ -465,6 +473,63 @@ function updateEmptyStates() {
   }
 }
 
+function loadProfileForm() {
+  if (!_profile) return;
+  var setVal = function(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.value = val || '';
+  };
+  setVal('prof-first', _profile.first_name);
+  setVal('prof-last', _profile.last_name);
+  setVal('prof-email', _profile.email);
+  setVal('prof-canton', _profile.canton);
+  setVal('prof-plz', _profile.plz);
+  setVal('prof-bio', _profile.bio);
+  setVal('prof-tg', _profile.tg_username);
+  setVal('prof-phone', _profile.phone);
+}
+
+function saveProfile(btn) {
+  if (!_supabase || !_profile) {
+    showNotif('Ошибка: не авторизован', 'error');
+    return;
+  }
+  var getVal = function(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+  };
+  var updates = {
+    first_name: getVal('prof-first'),
+    last_name: getVal('prof-last'),
+    canton: getVal('prof-canton'),
+    plz: getVal('prof-plz'),
+    bio: getVal('prof-bio'),
+    tg_username: getVal('prof-tg'),
+    phone: getVal('prof-phone'),
+    updated_at: new Date().toISOString()
+  };
+  if (!updates.first_name) {
+    showNotif('Имя обязательно', 'error');
+    return;
+  }
+  btn.textContent = 'Сохраняю...';
+  btn.disabled = true;
+  _supabase.from('profiles').update(updates).eq('id', _profile.id).then(function(res) {
+    btn.disabled = false;
+    if (res.error) {
+      btn.textContent = 'Сохранить изменения';
+      showNotif('Ошибка: ' + res.error.message, 'error');
+      return;
+    }
+    // Update local _profile
+    Object.assign(_profile, updates);
+    btn.textContent = '✓ Сохранено!';
+    renderNav(_profile);
+    setTimeout(function() { btn.textContent = 'Сохранить изменения'; }, 2000);
+    showNotif('✅ Профиль обновлён');
+  });
+}
+
 function handleLogin() {
   var email = document.getElementById('login-email-input') ? document.getElementById('login-email-input').value : '';
   var pwd = document.getElementById('login-pwd-input') ? document.getElementById('login-pwd-input').value : '';
@@ -526,6 +591,7 @@ function goPage(name) {
   if (nav) { nav.classList.add('active'); }
   if (name === 'deals') { updateDealsVisibility(); }
   if (name === 'home' || name === 'afisha') { setTimeout(updateEmptyStates, 50); }
+  if (name === 'profile') { setTimeout(loadProfileForm, 50); }
   window.scrollTo(0, 0);
 }
 
@@ -3505,15 +3571,16 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
         <div class="p-panel">
           <h3>⚙️ Настройки профиля</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Имя</label><input class="f-input" type="text" value="Анна" style="width:100%;"></div>
-            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Фамилия</label><input class="f-input" type="text" value="Иванова" style="width:100%;"></div>
-            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Кантон</label><select class="f-input" style="width:100%;"><option selected>Zürich</option><option>Bern</option><option>Geneva</option></select></div>
-            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">PLZ</label><input class="f-input" type="text" value="8001" style="width:100%;"></div>
-            <div style="grid-column:span 2;"><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">О себе</label><textarea class="f-input" style="width:100%;min-height:70px;">Живу в Zürich 7 лет. Помогу с документами и интеграцией.</textarea></div>
-            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Есть собака 🐕</label><select class="f-input" style="width:100%;"><option>Нет</option><option>Да, маленькая</option><option>Да, большая</option></select></div>
-            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Дети 👶</label><select class="f-input" style="width:100%;"><option>Нет</option><option>До 3 лет</option><option selected>3–7 лет (садик)</option><option>7–14 (школа)</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Имя</label><input id="prof-first" class="f-input" type="text" style="width:100%;"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Фамилия</label><input id="prof-last" class="f-input" type="text" style="width:100%;"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Email</label><input id="prof-email" class="f-input" type="email" readonly style="width:100%;background:#f5f5f5;color:#999;"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">PLZ</label><input id="prof-plz" class="f-input" type="text" style="width:100%;"></div>
+            <div style="grid-column:span 2;"><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Кантон</label><select id="prof-canton" class="f-input" style="width:100%;"><option value="">Не выбрано</option><option>Aargau</option><option>Appenzell Ausserrhoden</option><option>Appenzell Innerrhoden</option><option>Basel-Landschaft</option><option>Basel-Stadt</option><option>Bern</option><option>Fribourg</option><option>Geneva</option><option>Glarus</option><option>Graubünden</option><option>Jura</option><option>Luzern</option><option>Neuchâtel</option><option>Nidwalden</option><option>Obwalden</option><option>Schaffhausen</option><option>Schwyz</option><option>Solothurn</option><option>St.Gallen</option><option>Thurgau</option><option>Ticino</option><option>Uri</option><option>Valais</option><option>Vaud</option><option>Zug</option><option>Zürich</option></select></div>
+            <div style="grid-column:span 2;"><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">О себе</label><textarea id="prof-bio" class="f-input" style="width:100%;min-height:70px;" placeholder="Расскажи о себе..."></textarea></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Telegram</label><input id="prof-tg" class="f-input" type="text" placeholder="@username" style="width:100%;"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px;">Телефон</label><input id="prof-phone" class="f-input" type="tel" placeholder="+41..." style="width:100%;"></div>
           </div>
-          <button class="btn-reg" style="margin-top:16px;" onclick="this.textContent='✓ Сохранено!';setTimeout(()=>this.textContent='Сохранить изменения',2000)">Сохранить изменения</button>
+          <button class="btn-reg" style="margin-top:16px;" onclick="saveProfile(this)">Сохранить изменения</button>
         </div>
       </div>
 
