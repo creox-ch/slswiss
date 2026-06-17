@@ -73,6 +73,16 @@ function sbSignIn(email, password) {
     renderNav(_profile);
     updateEmptyStates();
     goPage('profile');
+    // Догрузить полный профиль из БД (как при восстановлении сессии),
+    // иначе после входа bio/телефон и т.п. не видны до перезагрузки страницы.
+    _supabase.from('profiles').select('*').eq('id', user.id).single().then(function(r) {
+      if (r.data) {
+        Object.assign(_profile, r.data);
+        _profile.email = user.email;
+        renderNav(_profile);
+        loadProfileForm();
+      }
+    });
   });
 }
 
