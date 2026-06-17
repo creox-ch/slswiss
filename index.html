@@ -3688,20 +3688,20 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
         <div class="oauth-btns"><button class="oauth-btn">🔵 Google</button><button class="oauth-btn">🍎 Apple</button></div>
         <div class="or-divider">или</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-          <div><label class="fl">Имя</label><input class="f-input" type="text" placeholder="Имя" style="width:100%;"></div>
-          <div><label class="fl">Фамилия</label><input class="f-input" type="text" placeholder="Фамилия" style="width:100%;"></div>
+          <div><label class="fl">Имя</label><input class="f-input" type="text" id="rs1-first" placeholder="Имя" style="width:100%;"></div>
+          <div><label class="fl">Фамилия</label><input class="f-input" type="text" id="rs1-last" placeholder="Фамилия" style="width:100%;"></div>
         </div>
-        <div style="margin-bottom:8px;"><label class="fl">Email</label><input class="f-input" type="email" placeholder="your@email.com" style="width:100%;"></div>
-        <div style="margin-bottom:12px;"><label class="fl">Пароль</label><input class="f-input" type="password" placeholder="••••••••" style="width:100%;"></div>
+        <div style="margin-bottom:8px;"><label class="fl">Email</label><input class="f-input" type="email" id="rs1-email" placeholder="your@email.com" style="width:100%;"></div>
+        <div style="margin-bottom:12px;"><label class="fl">Пароль</label><input class="f-input" type="password" id="rs1-pwd" placeholder="••••••••" style="width:100%;"></div>
         <button class="btn-hero" style="width:100%;padding:11px;" onclick="handleRegStep1()">Далее →</button>
       </div>
 
       <!-- Step 2 -->
       <div id="rs2" style="display:none;">
         <div style="margin-bottom:8px;"><label class="fl">Кантон проживания</label>
-          <select class="f-input" style="width:100%;"><option value="">— Выбери кантон —</option><option>Aargau</option><option>Appenzell AR</option><option>Appenzell IR</option><option>Basel-Land</option><option>Basel-Stadt</option><option>Bern</option><option>Fribourg</option><option>Geneva</option><option>Glarus</option><option>Graubünden</option><option>Jura</option><option>Luzern</option><option>Neuchâtel</option><option>Nidwalden</option><option>Obwalden</option><option>Schaffhausen</option><option>Schwyz</option><option>Solothurn</option><option>St.Gallen</option><option>Thurgau</option><option>Ticino</option><option>Uri</option><option>Valais</option><option>Vaud</option><option>Zug</option><option>Zürich</option></select>
+          <select class="f-input" id="rs2-canton" style="width:100%;"><option value="">— Выбери кантон —</option><option>Aargau</option><option>Appenzell AR</option><option>Appenzell IR</option><option>Basel-Land</option><option>Basel-Stadt</option><option>Bern</option><option>Fribourg</option><option>Geneva</option><option>Glarus</option><option>Graubünden</option><option>Jura</option><option>Luzern</option><option>Neuchâtel</option><option>Nidwalden</option><option>Obwalden</option><option>Schaffhausen</option><option>Schwyz</option><option>Solothurn</option><option>St.Gallen</option><option>Thurgau</option><option>Ticino</option><option>Uri</option><option>Valais</option><option>Vaud</option><option>Zug</option><option>Zürich</option></select>
         </div>
-        <div style="margin-bottom:10px;"><label class="fl">Почтовый индекс PLZ / NPA</label><input class="f-input" type="text" placeholder="8001" maxlength="4" style="width:100%;"></div>
+        <div style="margin-bottom:10px;"><label class="fl">Почтовый индекс PLZ / NPA</label><input class="f-input" type="text" id="rs2-plz" placeholder="8001" maxlength="4" style="width:100%;"></div>
         <div style="background:var(--brand-light);border-radius:10px;padding:10px 12px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--brand-dark);margin-bottom:3px;">🎯 Зачем индекс?</div><div style="font-size:11px;color:var(--mid);line-height:1.5;">Помогает найти бадди, события и сервисы рядом с вами.</div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button class="btn-login" style="padding:10px;" onclick="regStep(1)">← Назад</button>
