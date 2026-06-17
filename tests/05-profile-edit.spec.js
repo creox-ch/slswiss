@@ -26,7 +26,11 @@ const pwd = process.env.TEST_USER_PWD || 'TestPass123!';
 // На странице несколько .btn-reg — скоупим строго к форме настроек (стабильно
 // даже после смены текста кнопки на «Сохраняю...» / «✓ Сохранено!»).
 const SAVE_BTN = '#ptab-settings button.btn-reg';
-const PROFILES_PATCH = (r) =>
+// ВАЖНО: у Request метод вызывается как r.method(), у Response — как r.request().method().
+// Поэтому две отдельные проверки: для page.on('request') и для waitForResponse.
+const isProfilesPatchRequest = (r) =>
+  r.url().includes('/rest/v1/profiles') && r.method() === 'PATCH';
+const isProfilesPatchResponse = (r) =>
   r.url().includes('/rest/v1/profiles') && r.request().method() === 'PATCH';
 
 // ─────────────────────────────────────────────────────────────
@@ -215,13 +219,13 @@ test.describe('Профиль — редактирование (залогине
   test('8.2 — кнопка дизейблится и уходит ровно один PATCH-запрос', async ({ page }) => {
     await openProfileSettings(page);
     const patches = [];
-    page.on('request', (r) => { if (PROFILES_PATCH(r)) patches.push(r); });
+    page.on('request', (r) => { if (isProfilesPatchRequest(r)) patches.push(r); });
 
     await page.fill('#prof-first', 'Once' + Date.now());
     const btn = page.locator(SAVE_BTN);
     await btn.click();
     await expect(btn).toBeDisabled(); // защита от повторной отправки
-    await page.waitForResponse(PROFILES_PATCH);
+    await page.waitForResponse(isProfilesPatchResponse);
     await expect(page.getByText('Профиль обновлён')).toBeVisible();
     expect(patches.length).toBe(1);
   });
