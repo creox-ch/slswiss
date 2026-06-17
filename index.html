@@ -18,6 +18,19 @@ var SUPABASE_URL = 'https://dwcmiommviauwzkhkbki.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_8yyhkkUNIel1LqlwG0vreQ_4Y8Mu3pq';
 var _supabase = null;
 
+// Имя из метаданных провайдера. Google отдаёт full_name/name (и иногда
+// given_name/family_name), а не first_name/last_name. Возвращает {first,last}.
+function deriveName(md) {
+  md = md || {};
+  var first = md.first_name || md.given_name || '';
+  var last = md.last_name || md.family_name || '';
+  if (!first) {
+    var fn = (md.full_name || md.name || '').trim();
+    if (fn) { var p = fn.split(/\s+/); first = p[0]; last = last || p.slice(1).join(' '); }
+  }
+  return { first: first, last: last };
+}
+
 function initSupabase() {
   // SDK (внешний скрипт) может догрузиться позже готовности страницы — гонка.
   // Если его ещё нет, подождём и повторим, пока не появится.
@@ -30,9 +43,10 @@ function initSupabase() {
     _supabase.auth.getSession().then(function(res) {
       if (res.data && res.data.session) {
         var user = res.data.session.user;
+        var _n0 = deriveName(user.user_metadata);
         _profile = {
-          first_name: (user.user_metadata && user.user_metadata.first_name) || user.email.split('@')[0],
-          last_name: (user.user_metadata && user.user_metadata.last_name) || '',
+          first_name: (user.user_metadata && user.user_metadata.first_name) || _n0.first || user.email.split('@')[0],
+          last_name: (user.user_metadata && user.user_metadata.last_name) || _n0.last || '',
           email: user.email,
           id: user.id,
           canton: (user.user_metadata && user.user_metadata.canton) || '',
@@ -45,7 +59,18 @@ function initSupabase() {
           if (r.data) {
             Object.assign(_profile, r.data);
             _profile.email = user.email;
+            // Бэкфилл имени для OAuth-юзеров: триггер не знает Google-полей, поэтому
+            // в БД first_name мог остаться пустым — заполним из метаданных и сохраним.
+            if (!_profile.first_name) {
+              var n = deriveName(user.user_metadata);
+              if (n.first) {
+                _profile.first_name = n.first;
+                if (!_profile.last_name) { _profile.last_name = n.last; }
+                _supabase.from('profiles').update({ first_name: _profile.first_name, last_name: _profile.last_name }).eq('id', user.id).then(function(){});
+              }
+            }
             renderNav(_profile);
+            loadProfileForm();
           }
         });
         renderNav(_profile);
