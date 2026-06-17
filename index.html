@@ -502,6 +502,21 @@ function loadProfileForm() {
   setVal('prof-bio', _profile.bio);
   setVal('prof-tg', _profile.tg_username);
   setVal('prof-phone', _profile.phone);
+  renderProfileCard();
+}
+
+// Левая карточка профиля (имя, аватар, кантон/PLZ, план) из _profile.
+// Раньше была захардкожена демо-данными «Анна Иванова» и не обновлялась.
+function renderProfileCard() {
+  if (!_profile) return;
+  var setText = function(sel, val) { var el = document.querySelector(sel); if (el) el.textContent = val; };
+  var first = _profile.first_name || '';
+  var last = _profile.last_name || '';
+  setText('.p-name', (first + ' ' + last).trim() || 'Участник');
+  setText('.p-ava', ((first.charAt(0) || 'У') + (last.charAt(0) || '')).toUpperCase());
+  setText('.p-meta', '📍 ' + (_profile.canton || '—') + (_profile.plz ? ' · PLZ ' + _profile.plz : ''));
+  var badge = document.querySelector('.p-plan-badge');
+  if (badge) { badge.style.display = (_profile.plan && _profile.plan !== 'free') ? '' : 'none'; }
 }
 
 function saveProfile(btn) {
@@ -782,6 +797,7 @@ function renderNav(p) {
   lb.onclick = logOut;
   nr.appendChild(wrap);
   nr.appendChild(lb);
+  renderProfileCard();
 }
 
 // ================================================================
