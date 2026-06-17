@@ -3651,7 +3651,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
       <div class="or-divider">или email</div>
       <div style="margin-bottom:8px;"><label class="fl">Email</label><input class="f-input" type="email" id="login-email-input" placeholder="your@email.com" style="width:100%;"></div>
       <div style="margin-bottom:12px;"><label class="fl">Пароль</label><input class="f-input" type="password" id="login-pwd-input" placeholder="••••••••" style="width:100%;"></div>
-      <button class="btn-hero" style="width:100%;padding:11px;" onclick="this.textContent='Входим...';this.disabled=true;setTimeout(()=>loginDemo(),300)">Войти</button>
+      <button class="btn-hero" style="width:100%;padding:11px;" onclick="this.textContent='Входим...';this.disabled=true;handleLogin();setTimeout(()=>{this.textContent='Войти';this.disabled=false;},5000)">Войти</button>
       <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--light);">Нет аккаунта? <a onclick="switchModalTab('reg',null)" style="color:var(--brand);cursor:pointer;font-weight:600;">Зарегистрироваться</a></div>
     </div>
 
