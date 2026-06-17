@@ -48,6 +48,11 @@ async function openProfileSettings(page) {
   await page.locator('.pmenu-item', { hasText: 'Настройки' }).click();
   await expect(page.locator('#ptab-settings')).toHaveClass(/active/);
   await expect(page.locator('#prof-first')).toBeVisible();
+  // КЛЮЧЕВОЕ: дождаться, пока loadProfileForm() заполнит форму из _profile.
+  // goPage('profile') запускает loadProfileForm через ~50мс асинхронно; если
+  // тест впишет значение раньше — загрузка затрёт его старым из БД, и сохранится
+  // не то. Email у залогиненного всегда непустой, поэтому ждём именно его.
+  await expect(page.locator('#prof-email')).not.toHaveValue('');
 }
 
 module.exports = { registerUser, loginUser, openProfileSettings, TEST_EMAIL, TEST_PASSWORD };
