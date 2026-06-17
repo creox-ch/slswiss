@@ -174,7 +174,11 @@ test.describe('Регистрация — успех', () => {
     createdUserId = user.id;
     await adminConfirmUser(request, user.id);
 
+    // При отключённом подтверждении signUp сразу создаёт сессию — выйдем,
+    // чтобы протестировать именно ВХОД новыми данными (иначе кнопки «Войти» нет).
+    await page.evaluate(async () => { if (window._supabase) { await window._supabase.auth.signOut(); } });
     await page.goto('');
+    await expect(page.locator('#nav-right')).toContainText('Войти');
     await page.click('button.btn-login');
     await page.fill('#login-email-input', email);
     await page.fill('#login-pwd-input', PWD);

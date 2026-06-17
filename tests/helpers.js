@@ -48,10 +48,17 @@ async function openProfileSettings(page) {
   await page.locator('.pmenu-item', { hasText: 'Настройки' }).click();
   await expect(page.locator('#ptab-settings')).toHaveClass(/active/);
   await expect(page.locator('#prof-first')).toBeVisible();
-  // КЛЮЧЕВОЕ: дождаться, пока loadProfileForm() заполнит форму из _profile.
-  // goPage('profile') запускает loadProfileForm через ~50мс асинхронно; если
-  // тест впишет значение раньше — загрузка затрёт его старым из БД, и сохранится
-  // не то. Email у залогиненного всегда непустой, поэтому ждём именно его.
+  // КЛЮЧЕВОЕ против гонки: при входе loadProfileForm() срабатывает дважды —
+  // сразу из сессии (email уже есть), и позже из БД (DB-fetch в sbSignIn/getSession).
+  // Если тест впишет значение между ними, поздняя загрузка из БД его затрёт.
+  // Поэтому ждём, пока профиль реально подгружен из БД (updated_at есть только
+  // в строке БД, в объекте из сессии его нет), затем синхронизируем форму сами —
+  // после этого отложенных loadProfileForm уже не будет, и наш ввод не затрётся.
+  await page.waitForFunction(
+    () => window._profile && window._profile.id && ('updated_at' in window._profile),
+    null, { timeout: 15000 }
+  );
+  await page.evaluate(() => window.loadProfileForm && window.loadProfileForm());
   await expect(page.locator('#prof-email')).not.toHaveValue('');
 }
 
