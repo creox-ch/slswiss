@@ -691,9 +691,52 @@ function regStep(n) {
   var lbl = document.getElementById('reg-lbl');
   if (lbl) lbl.textContent = labels[n] || '';
 }
-function handleRegStep1() { regStep(2); }
-function handleRegStep2() { regStep(3); }
+function handleRegStep1() { if (!validateRegStep1()) { return; } regStep(2); }
+function handleRegStep2() { if (!validateRegStep2()) { return; } regStep(3); }
 function handleRegFinish() { loginDemo(); }
+
+// --- Валидация формы регистрации (контракт registration-fix) ---
+function _setErr(id, show) { var el = document.getElementById(id); if (el) { el.style.display = show ? 'block' : 'none'; } }
+function validateRegStep1() {
+  var first = (document.getElementById('rs1-first') || {}).value || '';
+  var last = (document.getElementById('rs1-last') || {}).value || '';
+  var email = (document.getElementById('rs1-email') || {}).value || '';
+  var pwd = (document.getElementById('rs1-pwd') || {}).value || '';
+  var firstOk = first.trim().length > 0;
+  var lastOk = last.trim().length > 0;
+  var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  var pwdOk = pwd.length >= 8;
+  // ошибку показываем только если поле уже трогали (непустое), чтобы не пугать с старта
+  _setErr('rs1-first-err', !firstOk && first.length > 0);
+  _setErr('rs1-last-err', !lastOk && last.length > 0);
+  _setErr('rs1-email-err', !emailOk && email.length > 0);
+  _setErr('rs1-pwd-err', !pwdOk && pwd.length > 0);
+  var btn = document.getElementById('rs1-next');
+  if (btn) { btn.disabled = !(firstOk && lastOk && emailOk && pwdOk); }
+  return firstOk && lastOk && emailOk && pwdOk;
+}
+function validateRegStep2() {
+  var canton = (document.getElementById('rs2-canton') || {}).value || '';
+  var plz = (document.getElementById('rs2-plz') || {}).value || '';
+  var cantonOk = canton.trim().length > 0;
+  var plzOk = /^\d{4}$/.test(plz);
+  _setErr('rs2-plz-err', !plzOk && plz.length > 0);
+  var btn = document.getElementById('rs2-next');
+  if (btn) { btn.disabled = !(cantonOk && plzOk); }
+  return cantonOk && plzOk;
+}
+function setupRegValidation() {
+  ['rs1-first', 'rs1-last', 'rs1-email', 'rs1-pwd'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('input', validateRegStep1); }
+  });
+  var plz = document.getElementById('rs2-plz');
+  if (plz) { plz.addEventListener('input', validateRegStep2); }
+  var canton = document.getElementById('rs2-canton');
+  if (canton) { canton.addEventListener('change', validateRegStep2); }
+  validateRegStep1();
+  validateRegStep2();
+}
 
 // ================================================================
 // AUTH / DEMO LOGIN
@@ -1533,6 +1576,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // восстанавливает сессию). Без этого вход сваливается в demo-режим, а
   // сохранение профиля отвечает «не авторизован».
   initSupabase();
+  setupRegValidation();
   // Check Stripe redirect
   try {
     var params = new URLSearchParams(window.location.search);
@@ -3740,12 +3784,12 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
         <div class="oauth-btns"><button class="oauth-btn" onclick="loginGoogle()">🔵 Google</button><button class="oauth-btn">🍎 Apple</button></div>
         <div class="or-divider">или</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-          <div><label class="fl">Имя</label><input class="f-input" type="text" id="rs1-first" placeholder="Имя" style="width:100%;"></div>
-          <div><label class="fl">Фамилия</label><input class="f-input" type="text" id="rs1-last" placeholder="Фамилия" style="width:100%;"></div>
+          <div><label class="fl">Имя</label><input class="f-input" type="text" id="rs1-first" placeholder="Имя" style="width:100%;"><div class="field-err" id="rs1-first-err" style="font-size:11px;color:#D52B1E;margin-top:4px;display:none;">Поле обязательно</div></div>
+          <div><label class="fl">Фамилия</label><input class="f-input" type="text" id="rs1-last" placeholder="Фамилия" style="width:100%;"><div class="field-err" id="rs1-last-err" style="font-size:11px;color:#D52B1E;margin-top:4px;display:none;">Поле обязательно</div></div>
         </div>
-        <div style="margin-bottom:8px;"><label class="fl">Email</label><input class="f-input" type="email" id="rs1-email" placeholder="your@email.com" style="width:100%;"></div>
-        <div style="margin-bottom:12px;"><label class="fl">Пароль</label><input class="f-input" type="password" id="rs1-pwd" placeholder="••••••••" style="width:100%;"></div>
-        <button class="btn-hero" style="width:100%;padding:11px;" onclick="handleRegStep1()">Далее →</button>
+        <div style="margin-bottom:8px;"><label class="fl">Email</label><input class="f-input" type="email" id="rs1-email" placeholder="your@email.com" style="width:100%;"><div class="field-err" id="rs1-email-err" style="font-size:11px;color:#D52B1E;margin-top:4px;display:none;">Введи корректный email</div></div>
+        <div style="margin-bottom:12px;"><label class="fl">Пароль</label><input class="f-input" type="password" id="rs1-pwd" placeholder="••••••••" style="width:100%;"><div class="field-err" id="rs1-pwd-err" style="font-size:11px;color:#D52B1E;margin-top:4px;display:none;">Минимум 8 символов</div></div>
+        <button class="btn-hero" id="rs1-next" style="width:100%;padding:11px;" onclick="handleRegStep1()" disabled>Далее →</button>
       </div>
 
       <!-- Step 2 -->
@@ -3753,11 +3797,11 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
         <div style="margin-bottom:8px;"><label class="fl">Кантон проживания</label>
           <select class="f-input" id="rs2-canton" style="width:100%;"><option value="">— Выбери кантон —</option><option>Aargau</option><option>Appenzell AR</option><option>Appenzell IR</option><option>Basel-Land</option><option>Basel-Stadt</option><option>Bern</option><option>Fribourg</option><option>Geneva</option><option>Glarus</option><option>Graubünden</option><option>Jura</option><option>Luzern</option><option>Neuchâtel</option><option>Nidwalden</option><option>Obwalden</option><option>Schaffhausen</option><option>Schwyz</option><option>Solothurn</option><option>St.Gallen</option><option>Thurgau</option><option>Ticino</option><option>Uri</option><option>Valais</option><option>Vaud</option><option>Zug</option><option>Zürich</option></select>
         </div>
-        <div style="margin-bottom:10px;"><label class="fl">Почтовый индекс PLZ / NPA</label><input class="f-input" type="text" id="rs2-plz" placeholder="8001" maxlength="4" style="width:100%;"></div>
+        <div style="margin-bottom:10px;"><label class="fl">Почтовый индекс PLZ / NPA</label><input class="f-input" type="text" id="rs2-plz" placeholder="8001" maxlength="4" style="width:100%;"><div class="field-err" id="rs2-plz-err" style="font-size:11px;color:#D52B1E;margin-top:4px;display:none;">PLZ — 4 цифры</div></div>
         <div style="background:var(--brand-light);border-radius:10px;padding:10px 12px;margin-bottom:12px;"><div style="font-size:11px;font-weight:700;color:var(--brand-dark);margin-bottom:3px;">🎯 Зачем индекс?</div><div style="font-size:11px;color:var(--mid);line-height:1.5;">Помогает найти бадди, события и сервисы рядом с вами.</div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button class="btn-login" style="padding:10px;" onclick="regStep(1)">← Назад</button>
-          <button class="btn-hero" style="padding:10px;" onclick="handleRegStep2()">Далее →</button>
+          <button class="btn-hero" id="rs2-next" style="padding:10px;" onclick="handleRegStep2()" disabled>Далее →</button>
         </div>
       </div>
 
