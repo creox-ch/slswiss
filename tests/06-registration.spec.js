@@ -104,32 +104,49 @@ test.describe('Регистрация — форма и шаги', () => {
 // БЛОК 2 — Валидация (без service_role)
 // ─────────────────────────────────────────────────────────────
 test.describe('Регистрация — валидация', () => {
-  test('2.1 — пустые email/пароль: signUp не отправляется', async ({ page }) => {
+  // Валидация теперь клиентская (контракт registration-fix): кнопка «Далее»
+  // заблокирована, пока поля невалидны, ошибки показываются под полями.
+  test('2.1 — пустые поля: «Далее» заблокирована, signUp не уходит', async ({ page }) => {
     await openRegistration(page);
     let signupCalled = false;
     page.on('request', (r) => { if (r.url().includes('/auth/v1/signup')) signupCalled = true; });
-    // проходим шаги, ничего не заполняя
-    await page.locator('#rs1 button:has-text("Далее")').click();
-    await page.locator('#rs2 button:has-text("Далее")').click();
-    await page.click('button:has-text("Создать аккаунт")');
-    await page.waitForTimeout(1000);
+    await expect(page.locator('#rs1-next')).toBeDisabled();
+    await page.waitForTimeout(300);
     expect(signupCalled).toBe(false);
   });
 
-  test('2.2 — невалидный email → ошибка от Supabase', async ({ page }) => {
-    const dialogs = [];
-    page.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
+  test('2.2 — невалидный email: ошибка под полем, «Далее» заблокирована', async ({ page }) => {
     await openRegistration(page);
-    await fillStepsAndSubmit(page, { first: 'T', last: 'U', email: 'not-an-email', pwd: PWD, canton: 'Zürich', plz: '8001' });
-    await expect.poll(() => dialogs.join(' '), { timeout: 10000 }).toContain('Ошибка');
+    await page.fill('#rs1-first', 'T');
+    await page.fill('#rs1-last', 'U');
+    await page.fill('#rs1-email', 'not-an-email');
+    await page.fill('#rs1-pwd', PWD);
+    await expect(page.locator('#rs1-email-err')).toBeVisible();
+    await expect(page.locator('#rs1-next')).toBeDisabled();
   });
 
-  test('2.3 — короткий пароль (<6) → ошибка от Supabase', async ({ page }) => {
-    const dialogs = [];
-    page.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
+  test('2.3 — короткий пароль (<8): ошибка под полем, «Далее» заблокирована', async ({ page }) => {
     await openRegistration(page);
-    await fillStepsAndSubmit(page, { first: 'T', last: 'U', email: uniqueEmail(), pwd: '123', canton: 'Zürich', plz: '8001' });
-    await expect.poll(() => dialogs.join(' '), { timeout: 10000 }).toContain('Ошибка');
+    await page.fill('#rs1-first', 'T');
+    await page.fill('#rs1-last', 'U');
+    await page.fill('#rs1-email', uniqueEmail());
+    await page.fill('#rs1-pwd', '123');
+    await expect(page.locator('#rs1-pwd-err')).toBeVisible();
+    await expect(page.locator('#rs1-next')).toBeDisabled();
+  });
+
+  test('2.4 — PLZ не 4 цифры: ошибка под полем, «Далее» (шаг 2) заблокирована', async ({ page }) => {
+    await openRegistration(page);
+    await page.fill('#rs1-first', 'T');
+    await page.fill('#rs1-last', 'U');
+    await page.fill('#rs1-email', uniqueEmail());
+    await page.fill('#rs1-pwd', PWD);
+    await page.locator('#rs1 button:has-text("Далее")').click();
+    await expect(page.locator('#rs2')).toBeVisible();
+    await page.selectOption('#rs2-canton', { label: 'Zürich' });
+    await page.fill('#rs2-plz', 'ABC');
+    await expect(page.locator('#rs2-plz-err')).toBeVisible();
+    await expect(page.locator('#rs2-next')).toBeDisabled();
   });
 });
 
