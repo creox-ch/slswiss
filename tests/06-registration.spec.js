@@ -167,10 +167,10 @@ test.describe('Регистрация — успех', () => {
     const email = uniqueEmail();
     await openRegistration(page);
     await fillStepsAndSubmit(page, { first: 'Рега', last: 'Тестова', email, pwd: PWD, canton: 'Bern', plz: '3000' });
-    await expect.poll(() => dialogs.join(' '), { timeout: 10000 }).toContain('Проверь email');
-
-    const user = await adminFindUser(request, email);
-    expect(user, 'пользователь должен быть создан в Supabase').toBeTruthy();
+    // Ждём, пока signUp создаст пользователя. Не зависит от состояния подтверждения:
+    // выключено → авто-логин, включено → экран «Проверь почту». Юзер создаётся в обоих.
+    let user = null;
+    await expect.poll(async () => { user = await adminFindUser(request, email); return !!user; }, { timeout: 15000 }).toBe(true);
     createdUserId = user.id;
     expect(user.user_metadata.first_name).toBe('Рега');
     expect(user.user_metadata.last_name).toBe('Тестова');
@@ -184,10 +184,8 @@ test.describe('Регистрация — успех', () => {
     const email = uniqueEmail();
     await openRegistration(page);
     await fillStepsAndSubmit(page, { first: 'Вход', last: 'Тест', email, pwd: PWD, canton: 'Zürich', plz: '8001' });
-    await expect.poll(() => dialogs.join(' '), { timeout: 10000 }).toContain('Проверь email');
-
-    const user = await adminFindUser(request, email);
-    expect(user).toBeTruthy();
+    let user = null;
+    await expect.poll(async () => { user = await adminFindUser(request, email); return !!user; }, { timeout: 15000 }).toBe(true);
     createdUserId = user.id;
     await adminConfirmUser(request, user.id);
 
@@ -213,10 +211,8 @@ test.describe('Регистрация — успех', () => {
     const email = uniqueEmail();
     await openRegistration(page);
     await fillStepsAndSubmit(page, { first: 'Проф', last: 'Иль', email, pwd: PWD, canton: 'Vaud', plz: '1000' });
-    await expect.poll(() => dialogs.join(' '), { timeout: 10000 }).toContain('Проверь email');
-
-    const user = await adminFindUser(request, email);
-    expect(user).toBeTruthy();
+    let user = null;
+    await expect.poll(async () => { user = await adminFindUser(request, email); return !!user; }, { timeout: 15000 }).toBe(true);
     createdUserId = user.id;
     // даём триггеру мгновение
     await page.waitForTimeout(1500);
