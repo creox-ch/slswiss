@@ -83,7 +83,19 @@ function initSupabase() {
 function sbSignIn(email, password) {
   if (!_supabase) { loginDemo(); return; }
   _supabase.auth.signInWithPassword({ email: email, password: password }).then(function(res) {
-    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
+    if (res.error) {
+      var emsg = res.error.message || '';
+      if (/confirm/i.test(emsg) || res.error.code === 'email_not_confirmed') {
+        // Подзадача 3: вход до подтверждения — сессию НЕ создаём, показываем «Проверь почту» + resend.
+        _lastRegEmail = email;
+        showCheckEmail(email);
+        var n = document.getElementById('resend-note');
+        if (n) { n.textContent = 'Сначала подтверди email — можем отправить письмо ещё раз.'; }
+      } else {
+        showNotif('Ошибка: ' + res.error.message, 'error');
+      }
+      return;
+    }
     var user = res.data.user;
     _profile = {
       first_name: (user.user_metadata && user.user_metadata.first_name) || user.email.split('@')[0],
@@ -111,16 +123,76 @@ function sbSignIn(email, password) {
   });
 }
 
+var _lastRegEmail = '';
+var _resendCount = 0;
+var _resendTimer = null;
+
 function sbSignUp(email, password, firstName, lastName, canton, plz) {
   if (!_supabase) { loginDemo(); return; }
+  _lastRegEmail = email;
   _supabase.auth.signUp({
     email: email,
     password: password,
     options: { data: { first_name: firstName, last_name: lastName, canton: canton, plz: plz } }
   }).then(function(res) {
-    if (res.error) { alert('Ошибка: ' + res.error.message); return; }
-    alert('Проверь email — отправили ссылку подтверждения на ' + email);
+    if (res.error) { showNotif('Ошибка: ' + res.error.message, 'error'); return; }
+    if (res.data && res.data.session) {
+      // Подтверждение email выключено — Supabase сразу выдал сессию: логиним и на главную.
+      var u = res.data.session.user;
+      _profile = {
+        first_name: (u.user_metadata && u.user_metadata.first_name) || u.email.split('@')[0],
+        last_name: (u.user_metadata && u.user_metadata.last_name) || '',
+        email: u.email, id: u.id,
+        canton: (u.user_metadata && u.user_metadata.canton) || '',
+        plan: 'free', points: 0, level: 'bronze'
+      };
+      var m = document.getElementById('modal'); if (m) { m.style.display = 'none'; }
+      renderNav(_profile);
+      goPage('home');
+    } else {
+      // Подтверждение включено — сессии нет: показываем экран «Проверь почту».
+      showCheckEmail(email);
+    }
   });
+}
+
+// Экран «Проверь почту» (контракт registration-fix, подзадача 2)
+function showCheckEmail(email) {
+  var addr = document.getElementById('checkemail-addr'); if (addr) { addr.textContent = email; }
+  var ml = document.getElementById('m-login'); if (ml) { ml.style.display = 'none'; }
+  var mr = document.getElementById('m-reg'); if (mr) { mr.style.display = 'none'; }
+  var tabs = document.querySelector('#modal .modal-tabs'); if (tabs) { tabs.style.display = 'none'; }
+  var ce = document.getElementById('m-checkemail'); if (ce) { ce.style.display = 'block'; }
+  var modal = document.getElementById('modal'); if (modal) { modal.style.display = 'flex'; }
+  startResendCooldown();
+}
+function startResendCooldown() {
+  var btn = document.getElementById('resend-btn');
+  if (!btn) { return; }
+  var left = 60;
+  if (_resendTimer) { clearInterval(_resendTimer); }
+  btn.disabled = true;
+  btn.textContent = 'Отправить ещё раз (' + left + ')';
+  _resendTimer = setInterval(function() {
+    left--;
+    if (left <= 0) {
+      clearInterval(_resendTimer);
+      if (_resendCount >= 3) { btn.disabled = true; btn.textContent = 'Лимит исчерпан (3/час)'; }
+      else { btn.disabled = false; btn.textContent = 'Отправить ещё раз'; }
+    } else {
+      btn.textContent = 'Отправить ещё раз (' + left + ')';
+    }
+  }, 1000);
+}
+function resendConfirmation() {
+  var note = document.getElementById('resend-note');
+  if (_resendCount >= 3) { if (note) { note.textContent = 'Лимит 3 письма в час исчерпан. Напиши в поддержку.'; } return; }
+  if (!_supabase || !_lastRegEmail) { return; }
+  _resendCount++;
+  _supabase.auth.resend({ type: 'signup', email: _lastRegEmail }).then(function(res) {
+    if (note) { note.textContent = res.error ? ('Ошибка: ' + res.error.message) : ('Письмо отправлено повторно на ' + _lastRegEmail); }
+  });
+  startResendCooldown();
 }
 
 function openEventForm() {
@@ -3872,6 +3944,16 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
 })()">Создать аккаунт 🎉</button>
         </div>
       </div>
+    </div>
+
+    <!-- CHECK EMAIL — экран после регистрации с подтверждением -->
+    <div id="m-checkemail" style="display:none;text-align:center;padding:8px 4px;">
+      <div style="font-size:42px;margin-bottom:8px;">📬</div>
+      <h2 style="margin-bottom:6px;">Проверь почту</h2>
+      <p style="font-size:13px;color:var(--mid);line-height:1.5;margin-bottom:14px;">Мы отправили письмо со ссылкой подтверждения на <strong id="checkemail-addr"></strong>. Перейди по ссылке, чтобы завершить регистрацию.</p>
+      <button class="btn-hero" id="resend-btn" style="width:100%;padding:11px;" onclick="resendConfirmation()" disabled>Отправить ещё раз</button>
+      <div id="resend-note" style="font-size:11px;color:var(--mid);margin-top:8px;min-height:14px;"></div>
+      <p style="font-size:11px;color:var(--light);margin-top:14px;">Не пришло письмо? Проверь спам или напиши в поддержку: <a href="mailto:support@slswiss.ch" style="color:var(--brand);">support@slswiss.ch</a></p>
     </div>
   </div>
 </div>
