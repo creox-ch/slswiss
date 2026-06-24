@@ -3,6 +3,9 @@
 You are working on **slswiss.ch** — single-page community platform for Russian speakers in Switzerland.
 Read this entire file before touching any code.
 
+> 🔑 **Start here after any session loss:** read `STATE.md` (repo root) — it is the canonical
+> snapshot of current sprint, paused work, deadlines, real file names and selectors.
+
 ---
 
 ## What this repo is
@@ -19,33 +22,53 @@ Read this entire file before touching any code.
 
 ```
 slswiss/
-├── soiludi_v4.html              # main app (~450KB, single-file SPA)
-├── soiludi_admin.html           # admin panel (separate file)
+├── index.html                   # ⭐ main app (~440KB, single-file SPA). NO soiludi_v4.html, NO admin file.
+├── STATE.md                     # canonical state snapshot — read first after session loss
+├── CLAUDE.md                    # this file
+├── AGENT-PROMPT.md              # sprint launch template
+├── HANDOFF.md                   # testing notes, known bugs
 ├── tests/
 │   ├── helpers.js               # shared selectors, loginUser()
 │   ├── 01-auth.spec.js          # working
 │   ├── 02-content.spec.js       # working
 │   ├── 03-pages.spec.js         # working (one .skip with TODO)
-│   └── 04-supabase.spec.js      # working
+│   ├── 04-supabase.spec.js      # working
+│   ├── 05-profile-edit.spec.js
+│   ├── 06-registration.spec.js
+│   └── 07-google-auth.spec.js
 ├── .github/workflows/test.yml   # CI, triggers on site changes only
 ├── playwright.config.js         # CommonJS (NOT ESM)
 ├── package.json
-└── CLAUDE.md                    # this file
+└── docs/                        # ⭐ source of truth for process (moved from Project knowledge 2026-06-24)
+    ├── PROCESS.md
+    ├── BACKLOG.md
+    ├── roadmap-to-2026-09-01.md
+    ├── IVANNA-NEXT-SPRINT.md
+    ├── meetings/meeting-extract-2026-06-18.md
+    └── contracts/{_template, registration-fix, forms-mvp-backend}.md
 ```
+
+> ⚠️ Main app is `index.html`. Older notes call it `soiludi_v4.html` — that file does NOT exist.
 
 ---
 
 ## Where the source of truth lives
 
-For each sprint, the contract in **Project knowledge** is the source of truth, NOT this repo:
+Process docs now live **in this repo under `docs/`** (moved from Project knowledge 2026-06-24 so
+they survive session/Cowork loss). For each sprint the contract is the source of truth:
 
-- `IVANNA-NEXT-SPRINT.md` — current sprint brief and concrete steps
-- `contracts/<feature>.md` — full list of testable assertions (the contract)
-- `BACKLOG.md` — what comes after current sprint
-- `slswiss-architecture.md` — architecture, schema, page structure
+- `STATE.md` (repo root) — canonical state: current sprint, paused work, deadlines, real selectors
+- `docs/IVANNA-NEXT-SPRINT.md` — current sprint brief and concrete steps
+- `docs/contracts/<feature>.md` — full list of testable assertions (the contract)
+- `docs/BACKLOG.md` — what comes after current sprint
+- `docs/PROCESS.md` — the planner-agent-evaluator process
+- `docs/roadmap-to-2026-09-01.md` — roadmap to launch
 - `HANDOFF.md` — testing setup notes, real selectors, known bugs
 
 If contract and code disagree, contract wins. If contract is wrong, STOP and ask Kseniia — do not improvise.
+
+> **Current sprint:** `forms-mvp-backend` (see `STATE.md`). `registration-fix` is PAUSED
+> (waiting on SendPulse SMTP + DNS). Do not assume the sprint — confirm in `STATE.md`.
 
 ---
 
@@ -107,7 +130,7 @@ You are the Agent. Your evaluator is GitHub Actions CI.
 
 ```bash
 python3 -c "import re,sys; \
-  content=open('soiludi_v4.html').read(); \
+  content=open('index.html').read(); \
   scripts=re.findall(r'<script[^>]*>(.*?)</script>', content, re.DOTALL); \
   open('/tmp/main.js','w').write(max(scripts, key=len))"
 node --check /tmp/main.js
@@ -149,49 +172,4 @@ If `node --check` fails, fix syntax before commit. Custom parsers miss things, `
 
 ---
 
-## What you can do autonomously
-
-- Read repo files, search, grep
-- Edit `soiludi_v4.html`, `soiludi_admin.html`, `tests/`, configs
-- Commit + push to `main`
-- Read GitHub Actions CI results
-- Update `BACKLOG.md` when sprint closes
-
-## What requires asking Kseniia first
-
-- Anything not in the current contract (scope expansion)
-- Product decisions (prices, what user sees, UX flow)
-- Schema migrations beyond what contract specifies
-- New dependencies in `package.json`
-- Repo restructuring
-- Force push, branch creation, tag creation
-
-## What you must NEVER do
-
-- Push to `main` if local syntax check fails
-- Push if last CI was red and root cause unresolved
-- Delete or `.skip()` tests just to make CI green
-- Commit secrets (API keys, passwords) — check `.gitignore` is respected
-- Reorganize repo or rename files without explicit instruction
-- Hardcode credentials anywhere
-
----
-
-## Tooling notes
-
-- **Local Playwright UI**: `npx playwright test --ui`
-- **CI status**: `gh run list --limit 5`
-- **CI logs**: `gh run view <id> --log-failed`
-- **Last commit on remote**: `git log origin/main -1 --oneline`
-- **JS syntax check**: see pattern above
-
----
-
-## When in doubt
-
-- Technical: try small, fail fast, iterate
-- Product: STOP, ask Kseniia
-- Architecture: read `slswiss-architecture.md` first, then ask
-- Stuck for >30 min: write down what's blocking and ask
-
-Be conservative with scope, aggressive with correctness.
+## What you can do

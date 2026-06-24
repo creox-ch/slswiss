@@ -1,0 +1,149 @@
+# STATE — SoiLüDi / slswiss
+
+> **Если сессия слетела или Cowork переустановили — читай этот файл первым.**
+> Это канонический снимок состояния проекта. Живёт в git → переживает потерю сессии,
+> переустановку приложения и смену компьютера. Восстановление = `git clone` + прочитать этот файл.
+
+**Обновлено:** 2026-06-24
+**Репо:** `github.com/creox-ch/slswiss`, ветка `main`
+**Прод (тест):** https://creox-ch.github.io/slswiss/ · цель — `slswiss.ch` (Netlify, позже)
+**Владелец:** Kseniia Chudina (Creox)
+
+---
+
+## 🔴 Где мы сейчас (самое главное)
+
+| | |
+|---|---|
+| **Текущий спринт** | `forms-mvp-backend` (W26, 22–28.06) — статус контракта `draft` |
+| **На паузе** | `registration-fix` — ждёт SendPulse SMTP (модерация) + DNS (SPF/DKIM в Hostpoint) |
+| **Ближайший дедлайн** | **01.07.2026** — открыть регистрацию (осталось ~7 дней от 24.06) |
+| **Большой дедлайн** | **01.09.2026** — платформа открыта для всех |
+
+### Текущий спринт — `forms-mvp-backend`
+Формы «Добавить в каталог» и «Добавить событие» сейчас заглушки (показывают «отправлено»,
+но в БД не пишут). Задача: подключить их к Supabase.
+- Две таблицы: `catalog_submissions`, `event_submissions`
+- Запись со `status = 'pending_moderation'`, от **анонимной** роли + **RLS** (только INSERT)
+- БЕЗ модерационного UI, БЕЗ авторизации (регистрация на паузе)
+- Поля форм брать из **реального HTML** (`index.html`), не выдумывать
+- Контракт = источник истины: `docs/contracts/forms-mvp-backend.md`
+- Подзадачи по порядку: `docs/IVANNA-NEXT-SPRINT.md`
+
+### На паузе — `registration-fix`
+Заблокирован внешними зависимостями (SMTP-модерация SendPulse + DNS).
+**Код уже почти весь написан** (проверено 24.06, `node --check` зелёный):
+клиентская валидация шагов 1–2, экран «Проверь почту», resend с лимитами (60с + 3/час),
+вход-до-подтверждения. Когда SMTP активируется — останется в основном **ручная проверка
+доставки писем** (Gmail/Outlook Inbox, не спам), а не разработка.
+- Контракт: `docs/contracts/registration-fix.md`
+- Возобновить когда: SendPulse активен И DNS готов.
+
+---
+
+## 📁 Реальная структура репо (ВАЖНО — не путать с устаревшими доками)
+
+```
+slswiss/
+├── STATE.md              # этот файл — точка входа
+├── CLAUDE.md             # правила для агента, real selectors, JS-валидация
+├── AGENT-PROMPT.md       # шаблон запуска спринта
+├── HANDOFF.md            # заметки по тестам, известные баги
+├── index.html            # ⭐ ГЛАВНОЕ приложение (~440 КБ, single-file SPA)
+├── tests/                # Playwright: 01-auth … 07-google-auth + helpers.js
+├── .github/workflows/test.yml   # CI
+└── docs/                 # ⭐ источник истины по процессу (перенесён из Project knowledge 24.06)
+    ├── PROCESS.md
+    ├── BACKLOG.md
+    ├── roadmap-to-2026-09-01.md
+    ├── IVANNA-NEXT-SPRINT.md
+    ├── meetings/meeting-extract-2026-06-18.md
+    └── contracts/
+        ├── _template.md
+        ├── registration-fix.md
+        └── forms-mvp-backend.md
+```
+
+> ⚠️ **Главный файл — `index.html`.** Старые доки иногда называют его `soiludi_v4.html` —
+> такого файла НЕТ. Админ-файла (`soiludi_admin.html`) тоже нет.
+
+---
+
+## 🔧 Реальные селекторы и факты (проверено в коде)
+
+- Логин-модалка: `#m-login` · email `#login-email-input` · пароль `#login-pwd-input` ·
+  submit `getByRole('button', { name: 'Войти', exact: true }).last()`
+- Регистрация: `#m-reg`, шаги `#rs1`/`#rs2`/`#rs3`
+  - Шаг 1: `#rs1-first`, `#rs1-last`, `#rs1-email`, `#rs1-pwd`, кнопка `#rs1-next`
+  - Ошибки: `#rs1-first-err`, `#rs1-email-err`, `#rs1-pwd-err`, `#rs2-plz-err`
+  - Шаг 2: `#rs2-canton` (select), `#rs2-plz`, кнопка `#rs2-next`
+  - Экран после регистрации: `#m-checkemail` (адрес в `#checkemail-addr`, resend `#resend-btn`)
+- Шапка: вход `button.btn-login` · регистрация `button.btn-join:has-text("Вступить")`
+- Навигация: `nav li:has-text("Кантоны")` — это `<li>`, не `<a>`
+- baseURL: `https://creox-ch.github.io/slswiss/` → в тестах `page.goto('')`, НЕ `'/'`
+- Supabase: `dwcmiommviauwzkhkbki.supabase.co`
+
+### Статус известных багов
+- ✅ Дубликат `#login-email-input` — **исправлен** (в коде один элемент)
+- ✅ `showModal()` undefined — исправлен · ✅ конфликт `createEvent` — исправлен
+- ⚠️ Верхняя кнопка «+ Добавить в каталог» в баннере не открывает форму (рабочая — нижняя). Решить в `forms-mvp-backend`.
+
+---
+
+## 🔄 Процесс (кратко — полностью в `docs/PROCESS.md`)
+
+Planner → Agent → Evaluator, 1 спринт/неделю.
+1. **Planner** (Kseniia) пишет черновик `docs/contracts/<feature>.md`
+2. **Evaluator** критикует контракт (edge cases, UI-инварианты, mobile)
+3. **Planner** финализирует → контракт **неприкосновенен**
+4. **Agent** (этот чат) реализует в `index.html` по пунктам, маленькие коммиты
+5. **Evaluator** (CI + тестовый чат) пишет Playwright из контракта, разбирает падения
+6. Петля до зелёного CI → спринт closed → обновить `docs/BACKLOG.md`
+
+**Правила:** контракт = истина; не выходить за scope (всё лишнее → BACKLOG);
+не пушить если `node --check` падает или прошлый CI красный без фикса.
+
+### JS-валидация перед коммитом (обязательно)
+```bash
+python3 -c "import re; c=open('index.html').read(); s=re.findall(r'<script[^>]*>(.*?)</script>', c, re.DOTALL); open('/tmp/main.js','w').write(max(s,key=len))"
+node --check /tmp/main.js
+```
+
+---
+
+## ▶️ Как возобновить работу после сбоя
+
+1. Открой папку проекта в Cowork (CLAUDE.md подхватится сам).
+2. Скажи агенту: **«прочитай STATE.md и docs/IVANNA-NEXT-SPRINT.md»**.
+3. Агент знает: текущий спринт, что на паузе, реальные файлы и селекторы — и продолжает с нужного места.
+4. Контракт текущего спринта — в `docs/contracts/`. Это источник истины.
+
+### Чего я (агент) НЕ могу из этой среды
+- `gh` CLI не установлен → **статус CI читать на github.com** (или у себя), не через `gh run`.
+- Push зависит от сохранённых кредов GitHub — если не пустит, коммит остаётся локальным.
+
+---
+
+## 🗺️ Что дальше по дорожной карте (полностью — `docs/roadmap-to-2026-09-01.md`)
+
+`registration-fix` → `payment-provider` → `business-99` → `access-logic` →
+`subscription-19` → `birzha-auth` (это critical path к 01.09).
+
+**Структурный риск:** ~10 спринтов на ~10 недель, нулевой резерв. Один срыв = сдвиг 01.09.
+Митигации в roadmap: второй разработчик / вынести часть за 01.09 / урезать MVP.
+
+---
+
+## 🧾 Закрытые продуктовые решения (не пересматривать без причины)
+- Защита от ботов: **email-confirmation** (НЕ капча)
+- Поля регистрации: текущие 2 шага (имя/фамилия/email/пароль → kanton/PLZ)
+- После регистрации: редирект на главную как залогиненный
+- Premium: **19 CHF/мес** (подтверждено встречей 06-18)
+- Каталог бизнеса: 99 CHF разово за карточку
+
+---
+
+## История STATE.md
+- **2026-06-24** — создан. Процессные доки перенесены из Project knowledge в `docs/`,
+  чтобы пережить потерю сессии. Исправлен дрейф `soiludi_v4.html` → `index.html`,
+  текущий спринт в доках выставлен на `forms-mvp-backend`.
