@@ -8,7 +8,7 @@
 
 ## Почему этот спринт, а не регистрация
 
-registration-fix поставлен на паузу: ждём пока SendPulse активирует SMTP (модерация) и пока настроим SPF/DKIM в Hostpoint вместе с Ksenia. Чтобы не простаивать — берём forms-mvp-backend. Он launch-critical (нужен к 01.07) и НЕ зависит от регистрации.
+registration-fix поставлен на паузу: ждём пока SendPulse активирует SMTP (модерация) и пока настроим SPF/DKIM в Hostpoint вместе с Ksenia. Чтобы не простаивать — берём forms-mvp-backend. Он важен для запуска (ориентир ~01.07) и НЕ зависит от регистрации.
 
 Когда SendPulse активируется и DNS будет готов — вернёмся к registration-fix.
 

@@ -172,4 +172,49 @@ If `node --check` fails, fix syntax before commit. Custom parsers miss things, `
 
 ---
 
-## What you can do
+## What you can do autonomously
+
+- Read repo files, search, grep
+- Edit `soiludi_v4.html`, `soiludi_admin.html`, `tests/`, configs
+- Commit + push to `main`
+- Read GitHub Actions CI results
+- Update `BACKLOG.md` when sprint closes
+
+## What requires asking Kseniia first
+
+- Anything not in the current contract (scope expansion)
+- Product decisions (prices, what user sees, UX flow)
+- Schema migrations beyond what contract specifies
+- New dependencies in `package.json`
+- Repo restructuring
+- Force push, branch creation, tag creation
+
+## What you must NEVER do
+
+- Push to `main` if local syntax check fails
+- Push if last CI was red and root cause unresolved
+- Delete or `.skip()` tests just to make CI green
+- Commit secrets (API keys, passwords) — check `.gitignore` is respected
+- Reorganize repo or rename files without explicit instruction
+- Hardcode credentials anywhere
+
+---
+
+## Tooling notes
+
+- **Local Playwright UI**: `npx playwright test --ui`
+- **CI status**: `gh run list --limit 5`
+- **CI logs**: `gh run view <id> --log-failed`
+- **Last commit on remote**: `git log origin/main -1 --oneline`
+- **JS syntax check**: see pattern above
+
+---
+
+## When in doubt
+
+- Technical: try small, fail fast, iterate
+- Product: STOP, ask Kseniia
+- Architecture: read `slswiss-architecture.md` first, then ask
+- Stuck for >30 min: write down what's blocking and ask
+
+Be conservative with scope, aggressive with correctness.
