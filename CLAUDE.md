@@ -86,6 +86,15 @@ Agent  →  updates BACKLOG.md (sprint → done)
 
 You are the Agent. Your evaluator is GitHub Actions CI.
 
+### ⚠️ TDD — обязательно
+Наш процесс — **test-driven**: любой новый функционал идёт **в паре с Playwright-тестами** под него,
+в том же спринте/PR. Не «код сейчас, тесты потом». Тесты пишет сам Agent (не отдельный чат).
+- Каждая фича → тесты в `tests/NN-<feature>.spec.js`, покрывающие пункты контракта (happy path,
+  валидация, edge cases, проверка данных в Supabase через `SUPABASE_SERVICE_KEY`).
+- CI запускается и на изменения `tests/**` (paths-ignore их больше НЕ исключает), так что новые
+  тесты прогоняются автоматически на пуш. Прогон — на задеплоенном сайте (GitHub Pages).
+- Залогиненный юзер в тестах — подтверждённый `TEST_USER_EMAIL`/`TEST_USER_PWD` (секреты CI).
+
 ---
 
 ## Critical learnings — do NOT repeat these
