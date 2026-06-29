@@ -26,24 +26,18 @@
 
 ## ⏸ На паузе
 
-- [ ] **registration-fix** — починить регистрацию для запуска 01.07
-  - Контракт: `contracts/registration-fix.md` (готов)
-  - Статус: `paused` — ждём активацию SendPulse SMTP (модерация) + DNS SPF/DKIM в Hostpoint с Ksenia
-  - Решения приняты: email-confirmation, текущие поля, редирект на главную
-  - Возобновить когда: SendPulse активен И DNS готов
-
-> 📌 **Смена пилота:** registration-fix → forms-mvp-backend (22.06), т.к. registration заблокирован внешними зависимостями (SMTP-модерация, DNS). Возвращаемся к registration как только разблокируется.
+- _(пусто)_ — `registration-fix` закрыт 2026-06-29 (см. «Сделано»).
 
 ---
 
 ## 📧 Email-инфраструктура
 
-- [ ] **resend-smtp** — подключить **Resend** как SMTP-провайдер для писем подтверждения регистрации
-  - Зачем: **потенциальный разблокатор `registration-fix`** — не ждать модерацию SendPulse, поднять доставку писем на Resend (бесплатный тир 3000 писем/мес)
-  - Что входит: custom SMTP в Supabase Auth на Resend, отправитель `noreply@slswiss.ch`, проверка доставки в Inbox (Gmail/Outlook, не спам)
-  - Зависит от: DNS SPF/DKIM для slswiss.ch (Hostpoint, доступ Ksenia) — те же DNS-записи, что и для SendPulse
-  - Связь: альтернатива SendPulse в `contracts/registration-fix.md`; выбрать один провайдер
-  - Возвращён в бэклог 2026-06-29 (был убран из 1-й итерации)
+- [x] **resend-smtp** — ✅ **DONE 2026-06-29**. Resend подключён как SMTP в Supabase Auth, отправитель `noreply@slswiss.ch`, DNS (DKIM/SPF на `send.slswiss.ch`, eu-west-1) стоит. Письма подтверждения уходят и доходят. Разблокировал `registration-fix`.
+- [ ] **email-deliverability** — письма пока летят в **Спам** (новый домен без истории + ссылка в письме ведёт на `supabase.co`)
+  - Прогрев домена (несколько реальных регистраций с откликом), отметка «Не спам»
+  - Забрендить шаблон Supabase «Confirm signup» (текст по-русски, имя отправителя, кнопка)
+  - Опц.: кастомный auth-домен в Supabase, чтобы ссылка была на slswiss.ch, а не supabase.co
+  - Не блокирует запуск, но к тест-группе 300 желательно довести до Inbox
 
 ---
 
@@ -145,11 +139,14 @@ Free vs premium логика (БЫВШИЙ пилот).
 - **test-selectors** — `data-testid` в ключевые элементы
 - **gcal-embed** — Google Calendar в Афише
 - **miro-dashboards** — интеграция с Plaud источниками
+- **disabled-button-ux** — заблокированная кнопка «Далее»/submit визуально не отличается от активной (на пустом обязательном поле выглядит как «зависло»). Приглушать вид disabled-кнопок (opacity/серый) или показывать ошибки по клику.
 
 ---
 
 ## ✅ Сделано
 
+- **registration-fix** (2026-06-29) — регистрация рабочая end-to-end через Resend SMTP; фикс `emailRedirectTo`; пометка обязательных полей
+- **resend-smtp** (2026-06-29) — Resend как SMTP-провайдер, DNS в Hostpoint
 - 7-разделов SPA-навигация
 - SVG-карта кантонов
 - Кантоны: карточки + детальные страницы
@@ -175,6 +172,8 @@ Free vs premium логика (БЫВШИЙ пилот).
 - **2026-06-29** — даты 01.07 / 01.09 переформулированы как ориентиры (а не жёсткие дедлайны);
   убраны countdown и формулировки про давление. Возвращён пункт **resend-smtp** (был убран из 1-й
   итерации) — как потенциальный разблокатор registration-fix.
+- **2026-06-29** — **registration-fix и resend-smtp закрыты**: регистрация рабочая end-to-end (Resend SMTP),
+  снята с паузы. Заведены не-блокеры **email-deliverability** (спам) и **disabled-button-ux**.
 - **2026-06-21** — крупный пересмотр после встречи 06-18:
   - Добавлены жёсткие дедлайны 01.07 и 01.09
   - Пилот: access-logic → registration-fix

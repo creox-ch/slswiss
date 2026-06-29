@@ -155,7 +155,9 @@
 ## История
 
 - **2026-06-21** — черновик создан Planner-чатом
-- *(ждёт критики от Evaluator)*
-- *(ждёт финализации)*
-- *(ждёт реализации Agent)*
-- *(ждёт closed)*
+- **2026-06-29** — **CLOSED**. Реализовано через **Resend** SMTP (не SendPulse). Регистрация работает
+  end-to-end: signup → письмо → клик по ссылке → залогинен на `/slswiss/`. Ключевой фикс — `emailRedirectTo`
+  в коде (`authRedirectURL()`), т.к. поле Site URL в Supabase роняло redirect на корень GitHub Pages.
+  Раннер: `docs/registration-go-live.md`.
+  - ⚠ Открытый пункт DoD «письмо в Inbox, не Spam» НЕ закрыт — письма пока в спаме (новый домен).
+    Вынесено в `email-deliverability` (BACKLOG) как не-блокер.
