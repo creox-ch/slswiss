@@ -31,6 +31,19 @@ function deriveName(md) {
   return { first: first, last: last };
 }
 
+// canton/plz могли не попасть в profiles при регистрации (триггер их не копирует из метаданных).
+// Берём из user_metadata и до-записываем в profiles, чтобы профиль показывал кантон/PLZ.
+function backfillProfileGeo(user) {
+  if (!user || !_profile || !_profile.id || !_supabase) { return; }
+  var md = user.user_metadata || {};
+  var patch = {};
+  if (!_profile.canton && md.canton) { _profile.canton = md.canton; patch.canton = md.canton; }
+  if (!_profile.plz && md.plz) { _profile.plz = md.plz; patch.plz = md.plz; }
+  if (patch.canton || patch.plz) {
+    _supabase.from('profiles').update(patch).eq('id', _profile.id).then(function(){});
+  }
+}
+
 function initSupabase() {
   // SDK (внешний скрипт) может догрузиться позже готовности страницы — гонка.
   // Если его ещё нет, подождём и повторим, пока не появится.
@@ -69,6 +82,7 @@ function initSupabase() {
                 _supabase.from('profiles').update({ first_name: _profile.first_name, last_name: _profile.last_name }).eq('id', user.id).then(function(){});
               }
             }
+            backfillProfileGeo(user);
             renderNav(_profile);
             loadProfileForm();
           }
@@ -116,6 +130,7 @@ function sbSignIn(email, password) {
       if (r.data) {
         Object.assign(_profile, r.data);
         _profile.email = user.email;
+        backfillProfileGeo(user);
         renderNav(_profile);
         loadProfileForm();
       }
