@@ -81,16 +81,11 @@ Free vs premium логика (БЫВШИЙ пилот).
 - Зависит от: registration-fix, access-logic
 - Отзывы после сделки — новая фича
 
-### 10. catalog-moderation
-Реальный процесс модерации бизнес-карточек.
-- ✅ Разблокирован 2026-06-29 (forms-mvp-backend done) — заявки лежат в `services` со `status='pending_moderation'`
-- Суть: админ-UI читает `status='pending_moderation'`, approve/reject = смена статуса (approved → виден публично)
-- Нужно решение: роли, SLA, правила
+### 10. catalog-moderation — ✅ DONE 2026-06-29
+Закрыт спринтом `moderation` (каталог + события вместе). См. «Сделано».
 
-### 11. events-moderation
-Модерация событий + админский UI.
-- ✅ Разблокирован 2026-06-29 (forms-mvp-backend done) — заявки в `events` со `status='pending_moderation'`
-- Та же статус-модель, что и каталог
+### 11. events-moderation — ✅ DONE 2026-06-29
+Закрыт спринтом `moderation`. См. «Сделано».
 
 ### 12. media-uploads
 Загрузка изображений: афиши, логотипы, аватар, дипломы.
@@ -143,6 +138,7 @@ Free vs premium логика (БЫВШИЙ пилот).
 
 ## ✅ Сделано
 
+- **moderation** (2026-06-29) — админ-UI (кнопка «Модерация», только `is_admin`) одобряет/отклоняет заявки `services`/`events` сменой статуса; RLS-защита (`is_admin()`); E2E `tests/09-moderation.spec.js`. Закрывает catalog-moderation + events-moderation
 - **forms-mvp-backend** (2026-06-29) — формы каталога/событий пишут заявки в Supabase (`services`/`events`) со `status='pending_moderation'`; статус-модель модерации + RLS; фикс ложного success/loading/двойного клика; E2E `tests/08-forms.spec.js`, CI зелёный
 - **registration-fix** (2026-06-29) — регистрация рабочая end-to-end через Resend SMTP; фикс `emailRedirectTo`; пометка обязательных полей
 - **resend-smtp** (2026-06-29) — Resend как SMTP-провайдер, DNS в Hostpoint
