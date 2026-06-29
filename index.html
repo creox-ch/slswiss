@@ -241,7 +241,8 @@ function showEventForm() {
     '<input id="event-location" type="text" placeholder="Адрес или ссылка на онлайн" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div>' +
     '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Описание</label>' +
     '<textarea id="event-desc" rows="4" placeholder="О чём событие, кого ждёшь..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;"></textarea></div>' +
-    '<button onclick="submitEvent()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Опубликовать событие →</button>' +
+    '<div id="event-form-err" style="display:none;font-size:12px;color:#D52B1E;margin-bottom:10px;"></div>' +
+    '<button id="event-submit" onclick="submitEvent()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Опубликовать событие →</button>' +
     '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором</p>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -250,30 +251,44 @@ function showEventForm() {
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
 }
 
+// Показать/скрыть инлайн-ошибку внутри формы (заявки каталога/событий)
+function _setFormErr(id, msg) {
+  var e = document.getElementById(id);
+  if (e) { e.textContent = msg || ''; e.style.display = msg ? 'block' : 'none'; }
+}
+
 function submitEvent() {
-  var title = document.getElementById('event-title') ? document.getElementById('event-title').value : '';
-  var desc = document.getElementById('event-desc') ? document.getElementById('event-desc').value : '';
-  var date = document.getElementById('event-date') ? document.getElementById('event-date').value : '';
-  var canton = document.getElementById('event-canton') ? document.getElementById('event-canton').value : '';
-  var location = document.getElementById('event-location') ? document.getElementById('event-location').value : '';
-  if (!title) { alert('Заполни название'); return; }
-  var overlay = document.getElementById('event-form-overlay');
-  if (overlay) overlay.remove();
-  if (_supabase && _profile) {
-    _supabase.from('events').insert({
-      title: title,
-      description: desc,
-      canton: canton,
-      location: location,
-      event_date: date || null,
-      created_by: _profile.id
-    }).then(function(res) {
-      if (res.error) { showNotif('Ошибка: ' + res.error.message, 'error'); return; }
-      showNotif('✅ Событие отправлено на модерацию!');
-    });
-  } else {
+  var btn = document.getElementById('event-submit');
+  if (btn && btn.disabled) { return; } // защита от двойного клика
+  var title = (document.getElementById('event-title') || {}).value || '';
+  var desc = (document.getElementById('event-desc') || {}).value || '';
+  var date = (document.getElementById('event-date') || {}).value || '';
+  var canton = (document.getElementById('event-canton') || {}).value || '';
+  var loc = (document.getElementById('event-location') || {}).value || '';
+  title = title.trim();
+  if (!title) { _setFormErr('event-form-err', 'Заполни название'); return; }
+  if (date) { var d = new Date(date); if (!isNaN(d.getTime()) && d.getTime() < Date.now()) { _setFormErr('event-form-err', 'Дата события должна быть в будущем'); return; } }
+  if (!_supabase || !_profile) { _setFormErr('event-form-err', 'Войди, чтобы добавить событие'); return; }
+  _setFormErr('event-form-err', '');
+  if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = 'Отправляем…'; }
+  // status НЕ шлём — БД ставит 'pending_moderation' по умолчанию (RLS не даёт вставить approved)
+  _supabase.from('events').insert({
+    title: title.slice(0, 200),
+    description: desc.slice(0, 5000),
+    canton: canton,
+    location: loc.slice(0, 300),
+    event_date: date || null,
+    created_by: _profile.id
+  }).then(function(res) {
+    if (res.error) {
+      if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Опубликовать событие →'; }
+      _setFormErr('event-form-err', 'Не удалось отправить: ' + res.error.message);
+      return;
+    }
+    var overlay = document.getElementById('event-form-overlay');
+    if (overlay) overlay.remove();
     showNotif('✅ Событие отправлено на модерацию!');
-  }
+  });
 }
 
 function createTask() {
@@ -403,7 +418,8 @@ function showBusinessForm() {
     '<input id="biz-web" type="url" placeholder="https://" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div>' +
     '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Telegram</label>' +
     '<input id="biz-tg" type="text" placeholder="@username" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div></div>' +
-    '<button onclick="submitBusiness()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Добавить в каталог →</button>' +
+    '<div id="biz-form-err" style="display:none;font-size:12px;color:#D52B1E;margin-bottom:10px;"></div>' +
+    '<button id="biz-submit" onclick="submitBusiness()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Добавить в каталог →</button>' +
     '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором · Бесплатно</p>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -412,33 +428,38 @@ function showBusinessForm() {
 }
 
 function submitBusiness() {
-  var name = document.getElementById('biz-name') ? document.getElementById('biz-name').value : '';
-  var desc = document.getElementById('biz-desc') ? document.getElementById('biz-desc').value : '';
-  var cat = document.getElementById('biz-cat') ? document.getElementById('biz-cat').value : '';
-  var canton = document.getElementById('biz-canton') ? document.getElementById('biz-canton').value : '';
-  var web = document.getElementById('biz-web') ? document.getElementById('biz-web').value : '';
-  var tg = document.getElementById('biz-tg') ? document.getElementById('biz-tg').value : '';
-  if (!name || !desc) { alert('Заполни название и описание'); return; }
-  var overlay = document.getElementById('biz-add-overlay');
-  if (overlay) overlay.remove();
-  if (_supabase && _profile) {
-    _supabase.from('services').insert({
-      name: name,
-      category: cat,
-      canton: canton,
-      description: desc,
-      website: web,
-      telegram: tg,
-      owner_id: _profile.id,
-      status: 'pending',
-      is_verified: false
-    }).then(function(res) {
-      if (res.error) { showNotif('Ошибка: ' + res.error.message, 'error'); return; }
-      showNotif('✅ Бизнес добавлен и отправлен на модерацию!');
-    });
-  } else {
-    showNotif('✅ Отправлено на модерацию!');
-  }
+  var btn = document.getElementById('biz-submit');
+  if (btn && btn.disabled) { return; } // защита от двойного клика
+  var name = (document.getElementById('biz-name') || {}).value || '';
+  var desc = (document.getElementById('biz-desc') || {}).value || '';
+  var cat = (document.getElementById('biz-cat') || {}).value || '';
+  var canton = (document.getElementById('biz-canton') || {}).value || '';
+  var web = (document.getElementById('biz-web') || {}).value || '';
+  var tg = (document.getElementById('biz-tg') || {}).value || '';
+  name = name.trim(); desc = desc.trim();
+  if (!name || !desc) { _setFormErr('biz-form-err', 'Заполни название и описание'); return; }
+  if (!_supabase || !_profile) { _setFormErr('biz-form-err', 'Войди, чтобы добавить в каталог'); return; }
+  _setFormErr('biz-form-err', '');
+  if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = 'Отправляем…'; }
+  // status/is_verified НЕ шлём — БД ставит status='pending_moderation', is_verified=false по умолчанию
+  _supabase.from('services').insert({
+    name: name.slice(0, 200),
+    category: cat,
+    canton: canton,
+    description: desc.slice(0, 5000),
+    website: web.slice(0, 300),
+    telegram: tg.slice(0, 100),
+    owner_id: _profile.id
+  }).then(function(res) {
+    if (res.error) {
+      if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Добавить в каталог →'; }
+      _setFormErr('biz-form-err', 'Не удалось отправить: ' + res.error.message);
+      return;
+    }
+    var overlay = document.getElementById('biz-add-overlay');
+    if (overlay) overlay.remove();
+    showNotif('✅ Заявка отправлена на модерацию!');
+  });
 }
 
 function writeArticle() {
