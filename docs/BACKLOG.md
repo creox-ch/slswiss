@@ -17,12 +17,8 @@
 
 ## 🔴 Текущий спринт
 
-- [ ] **forms-mvp-backend** — формы каталога и событий пишут в Supabase
-  - Контракт: `contracts/forms-mvp-backend.md`
-  - Статус: `draft`
-  - Каталог + события → запись со статусом `pending_moderation`
-  - Без модерационного UI, без авторизации (anon + RLS)
-  - НЕ зависит от регистрации — поэтому взят пока registration на паузе
+- _(пусто)_ — `forms-mvp-backend` закрыт 2026-06-29 (см. «Сделано»). Следующий — выбрать из списка ниже
+  (разблокированы `catalog-moderation` / `events-moderation`).
 
 ## ⏸ На паузе
 
@@ -87,12 +83,14 @@ Free vs premium логика (БЫВШИЙ пилот).
 
 ### 10. catalog-moderation
 Реальный процесс модерации бизнес-карточек.
-- Зависит от: forms-mvp-backend
+- ✅ Разблокирован 2026-06-29 (forms-mvp-backend done) — заявки лежат в `services` со `status='pending_moderation'`
+- Суть: админ-UI читает `status='pending_moderation'`, approve/reject = смена статуса (approved → виден публично)
 - Нужно решение: роли, SLA, правила
 
 ### 11. events-moderation
 Модерация событий + админский UI.
-- Зависит от: forms-mvp-backend
+- ✅ Разблокирован 2026-06-29 (forms-mvp-backend done) — заявки в `events` со `status='pending_moderation'`
+- Та же статус-модель, что и каталог
 
 ### 12. media-uploads
 Загрузка изображений: афиши, логотипы, аватар, дипломы.
@@ -145,6 +143,7 @@ Free vs premium логика (БЫВШИЙ пилот).
 
 ## ✅ Сделано
 
+- **forms-mvp-backend** (2026-06-29) — формы каталога/событий пишут заявки в Supabase (`services`/`events`) со `status='pending_moderation'`; статус-модель модерации + RLS; фикс ложного success/loading/двойного клика; E2E `tests/08-forms.spec.js`, CI зелёный
 - **registration-fix** (2026-06-29) — регистрация рабочая end-to-end через Resend SMTP; фикс `emailRedirectTo`; пометка обязательных полей
 - **resend-smtp** (2026-06-29) — Resend как SMTP-провайдер, DNS в Hostpoint
 - 7-разделов SPA-навигация
@@ -174,6 +173,8 @@ Free vs premium логика (БЫВШИЙ пилот).
   итерации) — как потенциальный разблокатор registration-fix.
 - **2026-06-29** — **registration-fix и resend-smtp закрыты**: регистрация рабочая end-to-end (Resend SMTP),
   снята с паузы. Заведены не-блокеры **email-deliverability** (спам) и **disabled-button-ux**.
+- **2026-06-29** — **forms-mvp-backend закрыт**: формы каталога/событий пишут в Supabase (статус-модель,
+  RLS, E2E зелёные). Разблокированы `catalog-moderation` / `events-moderation`.
 - **2026-06-21** — крупный пересмотр после встречи 06-18:
   - Добавлены жёсткие дедлайны 01.07 и 01.09
   - Пилот: access-logic → registration-fix
