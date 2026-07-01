@@ -36,8 +36,9 @@ test.describe('БЛОК 17 — Mobile adaptive (мобильная ширина 
     for (const nav of ['Каталог', 'Кантоны']) {
       await page.click('#nav-burger');
       await page.locator('nav .nav-links a', { hasText: nav }).click();
-      await page.waitForTimeout(300);
-      expect(await noHOverflow(page), `overflow на «${nav}»`).toBeTruthy();
+      // ждём стабилизации раскладки (не фикс. пауза): опрос до 4с — устраняет флак
+      await expect.poll(async () => await noHOverflow(page),
+        { timeout: 4000, message: `overflow на «${nav}»` }).toBeTruthy();
     }
   });
 
