@@ -18,6 +18,41 @@ var SUPABASE_URL = 'https://dwcmiommviauwzkhkbki.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_8yyhkkUNIel1LqlwG0vreQ_4Y8Mu3pq';
 var _supabase = null;
 
+// cantons-fix: единый источник кантонов (26, по алфавиту) для регистрации, профиля и всех форм.
+var CANTONS = ['Aargau', 'Appenzell AR', 'Appenzell IR', 'Basel-Land', 'Basel-Stadt', 'Bern', 'Fribourg', 'Geneva', 'Glarus', 'Graubünden', 'Jura', 'Luzern', 'Neuchâtel', 'Nidwalden', 'Obwalden', 'Schaffhausen', 'Schwyz', 'Solothurn', 'St.Gallen', 'Thurgau', 'Ticino', 'Uri', 'Valais', 'Vaud', 'Zug', 'Zürich'];
+function cantonOptionsHtml(extras) {
+  var html = CANTONS.map(function(c) { return '<option>' + c + '</option>'; }).join('');
+  if (extras && extras.length) { html += extras.map(function(e) { return '<option>' + e + '</option>'; }).join(''); }
+  return html;
+}
+function fillCantonSelect(id, placeholder, extras) {
+  var el = document.getElementById(id);
+  if (!el) { return; }
+  var cur = el.value;
+  el.innerHTML = (placeholder != null ? '<option value="">' + placeholder + '</option>' : '') + cantonOptionsHtml(extras);
+  if (cur) { el.value = cur; }
+}
+function initCantonSelects() {
+  fillCantonSelect('rs2-canton', '— Выбери кантон —');
+  fillCantonSelect('prof-canton', 'Не выбрано');
+}
+
+// draft-persistence: автосейв ввода форм в localStorage — форма переживает уход на другую вкладку.
+function _draftKey(name) { return 'slsdraft:' + name; }
+function _wireDraft(name, ids) {
+  try {
+    var saved = JSON.parse(localStorage.getItem(_draftKey(name)) || '{}');
+    ids.forEach(function(id) { var el = document.getElementById(id); if (el && saved[id] != null && saved[id] !== '') { el.value = saved[id]; } });
+  } catch (e) {}
+  var save = function() {
+    var d = {};
+    ids.forEach(function(id) { var el = document.getElementById(id); if (el) { d[id] = el.value; } });
+    try { localStorage.setItem(_draftKey(name), JSON.stringify(d)); } catch (e) {}
+  };
+  ids.forEach(function(id) { var el = document.getElementById(id); if (el) { el.addEventListener('input', save); el.addEventListener('change', save); } });
+}
+function _clearDraft(name) { try { localStorage.removeItem(_draftKey(name)); } catch (e) {} }
+
 // Имя из метаданных провайдера. Google отдаёт full_name/name (и иногда
 // given_name/family_name), а не first_name/last_name. Возвращает {first,last}.
 function deriveName(md) {
@@ -251,7 +286,7 @@ function showEventForm() {
     '<input id="event-date" type="datetime-local" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div>' +
     '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Кантон</label>' +
     '<select id="event-canton" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;">' +
-    '<option>Zürich</option><option>Bern</option><option>Luzern</option><option>Basel</option><option>Geneva</option><option>Zug</option><option>Ticino</option><option>Vaud</option><option>Valais</option><option>St.Gallen</option><option>🌐 Онлайн</option></select></div></div>' +
+    cantonOptionsHtml(['🌐 Онлайн']) + '</select></div></div>' +
     '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Место</label>' +
     '<input id="event-location" type="text" placeholder="Адрес или ссылка на онлайн" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div>' +
     '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Описание</label>' +
@@ -261,6 +296,7 @@ function showEventForm() {
     '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором</p>' +
     '</div>';
   document.body.appendChild(overlay);
+  _wireDraft('event', ['event-title', 'event-date', 'event-canton', 'event-location', 'event-desc']); // draft-persistence
   var ecb = document.getElementById('event-close-btn');
   if (ecb) ecb.onclick = function() { overlay.remove(); };
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
@@ -302,6 +338,7 @@ function submitEvent() {
     }
     var overlay = document.getElementById('event-form-overlay');
     if (overlay) overlay.remove();
+    _clearDraft('event'); // draft-persistence: успешно отправлено — чистим черновик
     showNotif('✅ Событие отправлено на модерацию!');
   });
 }
@@ -340,9 +377,7 @@ function showTaskForm() {
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">' +
     '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Кантон</label>' +
     '<select id="task-canton" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;">' +
-    '<option>🌐 Онлайн</option><option>Zürich</option><option>Bern</option><option>Luzern</option>' +
-    '<option>Basel</option><option>Geneva</option><option>Zug</option><option>Ticino</option>' +
-    '<option>Vaud</option><option>Valais</option><option>St.Gallen</option><option>Любой</option></select></div>' +
+    cantonOptionsHtml(['🌐 Онлайн', 'Любой']) + '</select></div>' +
     '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Бюджет (CHF)</label>' +
     '<input id="task-budget" type="number" placeholder="0 = договорная" min="0" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div></div>' +
     '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Описание</label>' +
@@ -423,9 +458,7 @@ function showBusinessForm() {
     '<option>🔧 Другое</option></select></div>' +
     '<div><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Кантон</label>' +
     '<select id="biz-canton" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;">' +
-    '<option>🌐 Онлайн</option><option>Zürich</option><option>Bern</option><option>Luzern</option>' +
-    '<option>Basel</option><option>Geneva</option><option>Zug</option><option>Ticino</option>' +
-    '<option>Vaud</option><option>Valais</option><option>St.Gallen</option><option>Вся Швейцария</option></select></div></div>' +
+    cantonOptionsHtml(['🌐 Онлайн', 'Вся Швейцария']) + '</select></div></div>' +
     '<div style="margin-bottom:14px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;color:#444;display:block;margin-bottom:6px;">Описание *</label>' +
     '<textarea id="biz-desc" rows="4" placeholder="Коротко о том что ты предлагаешь, опыт, специализация..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;"></textarea></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">' +
@@ -438,6 +471,7 @@ function showBusinessForm() {
     '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором · Бесплатно</p>' +
     '</div>';
   document.body.appendChild(overlay);
+  _wireDraft('biz', ['biz-name', 'biz-cat', 'biz-canton', 'biz-desc', 'biz-web', 'biz-tg']); // draft-persistence
   document.getElementById('biz-close-btn').onclick = function() { overlay.remove(); };
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
 }
@@ -473,6 +507,7 @@ function submitBusiness() {
     }
     var overlay = document.getElementById('biz-add-overlay');
     if (overlay) overlay.remove();
+    _clearDraft('biz'); // draft-persistence: успешно отправлено — чистим черновик
     showNotif('✅ Заявка отправлена на модерацию!');
   });
 }
@@ -1910,6 +1945,7 @@ function addGoal() {
 // INIT — runs after DOM is ready
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
+  initCantonSelects(); // cantons-fix: единый список 26 в #rs2-canton и #prof-canton
   // Подключаемся к Supabase при загрузке страницы (создаёт _supabase и
   // восстанавливает сессию). Без этого вход сваливается в demo-режим, а
   // сохранение профиля отвечает «не авторизован».
