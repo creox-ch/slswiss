@@ -178,6 +178,10 @@ function initSupabase() {
             backfillProfileGeo(user);
             renderNav(_profile);
             loadProfileForm();
+            maybeGateProfile(); // unify-registration: нет кантона/PLZ → экран дозаполнения
+          } else {
+            // Строки профиля ещё нет (свежий OAuth до триггера) — всё равно гейтим.
+            maybeGateProfile();
           }
         });
         renderNav(_profile);
@@ -226,6 +230,7 @@ function sbSignIn(email, password) {
         backfillProfileGeo(user);
         renderNav(_profile);
         loadProfileForm();
+        maybeGateProfile(); // unify-registration: самолечение старых юзеров без кантона/PLZ
       }
     });
   });
@@ -311,6 +316,101 @@ function resendConfirmation() {
     if (note) { note.textContent = res.error ? ('Ошибка: ' + res.error.message) : ('Письмо отправлено повторно на ' + _lastRegEmail); }
   });
   startResendCooldown();
+}
+
+// ================================================================
+// UNIFY-REGISTRATION — общий экран дозаполнения профиля после любого входа
+// Вход = только аутентификация; кантон/PLZ добираем здесь, если их нет.
+// ================================================================
+var _gateActive = false;
+
+// Нужен ли экран дозаполнения: залогинен, но нет кантона или PLZ.
+function needsProfileCompletion() {
+  return !!(_profile && (!_profile.canton || !String(_profile.plz || '').trim()));
+}
+
+// Проверить и при необходимости открыть гейт. Возвращает true, если гейт показан.
+function maybeGateProfile() {
+  if (needsProfileCompletion()) { openProfileCompletion(); return true; }
+  return false;
+}
+
+function openProfileCompletion() {
+  _gateActive = true;
+  var sel = document.getElementById('pc-canton');
+  if (sel && !sel.dataset.filled) {
+    sel.innerHTML = '<option value="">— Выбери кантон —</option>' + cantonOptionsHtml();
+    sel.dataset.filled = '1';
+    sel.addEventListener('change', validateComplete);
+  }
+  if (sel && _profile && _profile.canton) { sel.value = _profile.canton; }
+  var plz = document.getElementById('pc-plz');
+  if (plz) {
+    if (_profile && _profile.plz) { plz.value = _profile.plz; }
+    if (!plz.dataset.wired) { plz.addEventListener('input', validateComplete); plz.dataset.wired = '1'; }
+  }
+  ['m-login', 'm-reg', 'm-checkemail'].forEach(function(id) { var el = document.getElementById(id); if (el) { el.style.display = 'none'; } });
+  var tabs = document.querySelector('#modal .modal-tabs'); if (tabs) { tabs.style.display = 'none'; }
+  var x = document.querySelector('#modal .modal-close'); if (x) { x.style.display = 'none'; }
+  var mc = document.getElementById('m-complete'); if (mc) { mc.style.display = 'block'; }
+  var modal = document.getElementById('modal'); if (modal) { modal.style.display = 'flex'; }
+  var err = document.getElementById('pc-err'); if (err) { err.style.display = 'none'; }
+  validateComplete();
+}
+
+function validateComplete() {
+  var canton = (document.getElementById('pc-canton') || {}).value || '';
+  var plz = (document.getElementById('pc-plz') || {}).value || '';
+  var cantonOk = canton.trim().length > 0;
+  var plzOk = /^\d{4}$/.test(plz);
+  _setErr('pc-plz-err', !plzOk && plz.length > 0);
+  var btn = document.getElementById('pc-finish');
+  if (btn && btn.dataset.loading !== '1') { btn.disabled = !(cantonOk && plzOk); }
+  return cantonOk && plzOk;
+}
+
+function _closeGate() {
+  _gateActive = false;
+  var mc = document.getElementById('m-complete'); if (mc) { mc.style.display = 'none'; }
+  var x = document.querySelector('#modal .modal-close'); if (x) { x.style.display = ''; }
+  var tabs = document.querySelector('#modal .modal-tabs'); if (tabs) { tabs.style.display = ''; }
+  var ml = document.getElementById('m-login'); if (ml) { ml.style.display = 'block'; }
+  var modal = document.getElementById('modal'); if (modal) { modal.style.display = 'none'; }
+}
+
+function finishProfileCompletion() {
+  if (!validateComplete()) { return; }
+  var consent = document.getElementById('pc-consent');
+  if (!consent || !consent.checked) { _setErr('pc-consent-err', true); return; }
+  _setErr('pc-consent-err', false);
+  var btn = document.getElementById('pc-finish');
+  if (btn && btn.dataset.loading === '1') { return; } // защита от двойного клика
+  var canton = document.getElementById('pc-canton').value;
+  var plz = document.getElementById('pc-plz').value;
+  function fail(msg) {
+    if (btn) { btn.dataset.loading = ''; btn.disabled = false; btn.textContent = 'Готово 🎉'; }
+    var e = document.getElementById('pc-err'); if (e) { e.textContent = msg; e.style.display = 'block'; }
+  }
+  if (btn) { btn.dataset.loading = '1'; btn.disabled = true; btn.textContent = 'Сохраняем...'; }
+  if (!_supabase || !_profile || !_profile.id) { fail('Нет соединения — попробуй ещё раз'); return; }
+  _supabase.from('profiles').update({ canton: canton, plz: plz }).eq('id', _profile.id).then(function(res) {
+    if (res.error) { fail('Не удалось сохранить: ' + res.error.message); return; }
+    _profile.canton = canton; _profile.plz = plz;
+    // Зеркалим в user_metadata, чтобы backfill при следующих входах видел данные.
+    _supabase.auth.updateUser({ data: { canton: canton, plz: plz } }).then(function() {});
+    if (btn) { btn.dataset.loading = ''; btn.textContent = 'Готово 🎉'; }
+    _closeGate();
+    renderNav(_profile);
+    updateEmptyStates();
+    goPage('home');
+  });
+}
+
+// Escape hatch: не запираем юзера — «Выйти» реально завершает сессию.
+function exitProfileCompletion() {
+  _closeGate();
+  if (_supabase) { _supabase.auth.signOut().then(function() { logOut(); }); }
+  else { logOut(); }
 }
 
 function openEventForm() {
@@ -1064,9 +1164,15 @@ function showModal() {
   if (m) m.style.display = 'flex';
 }
 function closeModal(e) {
+  if (_gateActive) { return; } // unify-registration: экран дозаполнения нельзя закрыть кликом вне
   if (e && e.target && e.target.id === 'modal') {
     document.getElementById('modal').style.display = 'none';
   }
+}
+// unify-registration: закрытие модалки входа крестиком, но не пока активен обязательный гейт
+function closeAuthModal() {
+  if (_gateActive) { return; }
+  var m = document.getElementById('modal'); if (m) { m.style.display = 'none'; }
 }
 function switchModalTab(tab, el) {
   document.querySelectorAll('.modal-tab').forEach(function(t) {
@@ -1194,8 +1300,14 @@ function loginDemo() {
   renderNav(_profile);
   goPage('profile');
 }
+// Честная заглушка для ещё не подключённых способов входа (Apple, Telegram).
+// Реальный вход появится в спринтах apple-auth / telegram-auth.
+function loginSoon(name) {
+  showNotif('Вход через ' + name + ' скоро будет доступен. Пока используй Google или email.', 'info');
+}
+
 // ================================================================
-// TELEGRAM LOGIN
+// TELEGRAM LOGIN (не подключено — см. спринт telegram-auth; кнопка ведёт на loginSoon)
 // ================================================================
 var TG_BOT_USERNAME = 'slswiss_bot'; // замени на реальный username бота
 
@@ -4234,7 +4346,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
 <!-- ═══ MODAL ═══ -->
 <div class="modal-overlay" id="modal" style="display:none;" onclick="closeModal(event)">
   <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('modal').style.display='none'">✕</button>
+    <button class="modal-close" onclick="closeAuthModal()">✕</button>
     <h2>SoiLüDi Community</h2>
     <p class="modal-sub">Русскоязычное сообщество Швейцарии</p>
     <div class="modal-tabs">
@@ -4245,7 +4357,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
     <!-- LOGIN -->
     <div id="m-login">
       <!-- Telegram — главная кнопка -->
-      <button onclick="loginTelegram()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#2AABEE,#229ED9);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+      <button onclick="loginSoon('Telegram')" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#2AABEE,#229ED9);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 13.802l-2.95-.924c-.64-.203-.654-.64.136-.95l11.527-4.445c.535-.194 1.002.131.37.765z"/></svg>
         Войти через Telegram
       </button>
@@ -4272,7 +4384,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
 
       <!-- Step 1 -->
       <div id="rs1">
-        <div class="oauth-btns"><button class="oauth-btn" onclick="loginGoogle()">🔵 Google</button><button class="oauth-btn">🍎 Apple</button></div>
+        <div class="oauth-btns"><button class="oauth-btn" onclick="loginGoogle()">🔵 Google</button><button class="oauth-btn" onclick="loginSoon('Apple')">🍎 Apple</button></div>
         <div class="or-divider">или</div>
         <div style="font-size:11px;color:var(--mid);margin-bottom:8px;"><span style="color:#D52B1E;">*</span> — обязательные поля</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -4369,6 +4481,41 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
       <button class="btn-hero" id="resend-btn" style="width:100%;padding:11px;" onclick="resendConfirmation()" disabled>Отправить ещё раз</button>
       <div id="resend-note" style="font-size:11px;color:var(--mid);margin-top:8px;min-height:14px;"></div>
       <p style="font-size:11px;color:var(--light);margin-top:14px;">Не пришло письмо? Проверь спам или напиши в поддержку: <a href="mailto:support@slswiss.ch" style="color:var(--brand);">support@slswiss.ch</a></p>
+    </div>
+
+    <!-- COMPLETE PROFILE — общий экран дозаполнения после любого входа (unify-registration) -->
+    <div id="m-complete" style="display:none;">
+      <div style="text-align:center;margin-bottom:14px;">
+        <div style="font-size:38px;margin-bottom:4px;">👋</div>
+        <h2 style="margin-bottom:4px;">Ещё пара деталей</h2>
+        <p style="font-size:13px;color:var(--mid);line-height:1.5;">Укажи кантон и индекс — поможем найти события, бадди и сервисы рядом.</p>
+      </div>
+      <div style="font-size:11px;color:var(--mid);margin-bottom:8px;"><span style="color:#D52B1E;">*</span> — обязательные поля</div>
+      <div style="margin-bottom:8px;"><label class="fl">Кантон проживания <span class="req" style="color:#D52B1E;">*</span></label>
+        <select class="f-input" id="pc-canton" style="width:100%;"><option value="">— Выбери кантон —</option></select>
+      </div>
+      <div style="margin-bottom:10px;"><label class="fl">Почтовый индекс PLZ / NPA <span class="req" style="color:#D52B1E;">*</span></label><input class="f-input" type="text" id="pc-plz" placeholder="8001" maxlength="4" style="width:100%;"><div class="field-err" id="pc-plz-err" style="font-size:11px;color:#D52B1E;margin-top:4px;display:none;">PLZ — 4 цифры</div></div>
+      <div style="margin-bottom:12px;">
+        <label class="fl">Интересы — выберите несколько</label>
+        <div style="display:flex;flex-wrap:wrap;margin-top:6px;">
+          <span class="int-pill" onclick="this.classList.toggle('sel')">🏔️ Походы</span>
+          <span class="int-pill" onclick="this.classList.toggle('sel')">🏋️ Спорт</span>
+          <span class="int-pill" onclick="this.classList.toggle('sel')">🍽️ Рестораны</span>
+          <span class="int-pill" onclick="this.classList.toggle('sel')">📚 Книги</span>
+          <span class="int-pill" onclick="this.classList.toggle('sel')">🎭 Культура</span>
+          <span class="int-pill" onclick="this.classList.toggle('sel')">💼 Бизнес</span>
+          <span class="int-pill" onclick="this.classList.toggle('sel')">🗣️ Языки</span>
+          <span class="int-pill" onclick="this.classList.toggle('sel')">💻 IT</span>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;font-size:12px;color:#555;display:flex;align-items:flex-start;gap:8px;">
+        <input type="checkbox" id="pc-consent" style="margin-top:2px;flex-shrink:0;">
+        <label for="pc-consent">Я принимаю <a onclick="showLegal()" style="color:var(--brand);cursor:pointer;text-decoration:underline;">AGB и Политику конфиденциальности</a></label>
+      </div>
+      <div id="pc-consent-err" style="display:none;font-size:11px;color:#D52B1E;margin-bottom:8px;">Нужно принять условия, чтобы продолжить</div>
+      <div id="pc-err" style="display:none;font-size:12px;color:#D52B1E;margin-bottom:10px;"></div>
+      <button class="btn-hero" id="pc-finish" style="width:100%;padding:11px;" onclick="finishProfileCompletion()" disabled>Готово 🎉</button>
+      <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--light);"><a id="pc-exit" onclick="exitProfileCompletion()" style="color:var(--mid);cursor:pointer;">Выйти</a></div>
     </div>
   </div>
 </div>

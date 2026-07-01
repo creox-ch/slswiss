@@ -15,7 +15,7 @@
 
 | | |
 |---|---|
-| **Текущий спринт** | _нет активного_ — выбрать следующий (next по roadmap: `payment-provider`) |
+| **Текущий спринт** | 🟡 `unify-registration` — В РАБОТЕ (2026-07-01, ждёт CI + подтверждения Ksenia) |
 | **✅ Готово (2026-06-29)** | `registration-fix` (Resend) · `resend-smtp` · `forms-mvp-backend` · `moderation` (admin approve/reject) |
 | **✅ Пофикшено (2026-07-01)** | баг canton/plz после регистрации — код-фоллбэк `backfillProfileGeo` из метаданных (тест 15.1 зелёный) |
 | **✅ Замкнуто (2026-07-01)** | `catalog-display` — одобренные заявки показываются в каталоге/афише (форма → модерация → публикация) |
@@ -36,8 +36,8 @@
 - **Платежи (Payrexx):** что первым — 99 (бизнес разово) vs 19 (подписка) + подтвердить подход **Supabase Edge Functions** (slswiss статический; Next.js-роуты из билетного проекта «как есть» не переносятся). Путь оплаты — в `contracts/business-role.md`.
 
 **Можно брать без решений (decision-light):**
-- `unify-registration` — единый профиль для Google/Apple/Telegram (Google пропускает кантон/PLZ/интересы) → общий экран дозаполнения после любого входа.
-- `telegram-auth` — вход через Telegram.
+- 🟡 `unify-registration` — **В РАБОТЕ (2026-07-01)**: общий экран дозаполнения `#m-complete` после любого входа (кантон/PLZ + согласие AGB), если их нет. Контракт `contracts/unify-registration.md`, тесты `tests/16-*`. Ждёт зелёного CI. Apple не трогаем (решение Ksenia).
+- `telegram-auth` — вход через Telegram (переиспользует экран дозаполнения из `unify-registration`).
 - Хвост `user-content-moderation`: автор видит статус своих **статей** в профиле (для services/events уже сделано в `moderator-role`).
 
 **Что применено в БД Supabase (не потерять):**
