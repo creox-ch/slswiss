@@ -15,11 +15,12 @@
 
 | | |
 |---|---|
-| **Текущий спринт** | 🟡 `unify-registration` — В РАБОТЕ (2026-07-01, ждёт CI + подтверждения Ksenia) |
+| **Текущий спринт** | _нет активного_ — decision-light next: `telegram-auth` (переиспользует экран дозаполнения) |
 | **✅ Готово (2026-06-29)** | `registration-fix` (Resend) · `resend-smtp` · `forms-mvp-backend` · `moderation` (admin approve/reject) |
 | **✅ Пофикшено (2026-07-01)** | баг canton/plz после регистрации — код-фоллбэк `backfillProfileGeo` из метаданных (тест 15.1 зелёный) |
 | **✅ Замкнуто (2026-07-01)** | `catalog-display` — одобренные заявки показываются в каталоге/афише (форма → модерация → публикация) |
 | **✅ Роль модератора (2026-07-01)** | `moderator-role` — бейдж-счётчик, снять/вернуть публикацию, in-app статус заявок автора в профиле; тесты зелёные |
+| **✅ Unify registration (2026-07-01)** | `unify-registration` — общий экран дозаполнения `#m-complete` после любого входа (кантон/PLZ + согласие AGB); чинит Google-юзеров без гео + юр-дыру; Apple/Telegram → честные заглушки. CI зелёный (блок 16, 7/7) |
 | **✅ Ещё сделано (2026-07-01)** | `legal-consent` (согласия+cookie+юр-док в футере) · `cantons-fix` · `draft-persistence` · `user-content-moderation` (статьи в модерации: автор+полный текст) |
 | **Разъезд регистрации** | Google-вход пропускает кантон/PLZ/интересы (у email — есть); Apple — заглушка; Telegram не подключён → задачи `unify-registration` + `telegram-auth` в BACKLOG |
 | **Ориентир по срокам** | **~01.07.2026** — открыть регистрацию (ориентир, не жёсткий дедлайн) |
@@ -36,8 +37,8 @@
 - **Платежи (Payrexx):** что первым — 99 (бизнес разово) vs 19 (подписка) + подтвердить подход **Supabase Edge Functions** (slswiss статический; Next.js-роуты из билетного проекта «как есть» не переносятся). Путь оплаты — в `contracts/business-role.md`.
 
 **Можно брать без решений (decision-light):**
-- 🟡 `unify-registration` — **В РАБОТЕ (2026-07-01)**: общий экран дозаполнения `#m-complete` после любого входа (кантон/PLZ + согласие AGB), если их нет. Контракт `contracts/unify-registration.md`, тесты `tests/16-*`. Ждёт зелёного CI. Apple не трогаем (решение Ksenia).
-- `telegram-auth` — вход через Telegram (переиспользует экран дозаполнения из `unify-registration`).
+- ✅ `unify-registration` — **ЗАКРЫТ 2026-07-01** (CI зелёный, блок 16 7/7). Общий экран дозаполнения `#m-complete`. Контракт `contracts/unify-registration.md`, тесты `tests/16-*`. Ждёт финального ревью Ksenia.
+- `telegram-auth` — вход через Telegram (переиспользует экран дозаполнения `#m-complete` из `unify-registration`).
 - Хвост `user-content-moderation`: автор видит статус своих **статей** в профиле (для services/events уже сделано в `moderator-role`).
 
 **Что применено в БД Supabase (не потерять):**
@@ -176,6 +177,10 @@ node --check /tmp/main.js
 ---
 
 ## История STATE.md
+- **2026-07-01** — `unify-registration` закрыт: общий экран дозаполнения `#m-complete` после любого входа
+  (кантон/PLZ + обязательное согласие AGB), гейт и при восстановлении сессии (самолечение старых
+  Google-юзеров), сохранение в `profiles`+`user_metadata`, escape hatch «Выйти». Apple/Telegram →
+  честные заглушки `loginSoon`. CI зелёный (98 passed, блок 16 7/7). Ждёт финального ревью Ksenia.
 - **2026-07-01** — большая сессия: закрыты `catalog-display`, `moderator-role` (бейдж, снять/вернуть,
   in-app статус автора), `cantons-fix`, `draft-persistence`, `legal-consent` (согласия+cookie+юр-док в футере),
   `user-content-moderation` (статьи в модерации: автор+полный текст). Фикс canton/plz. Все с E2E, main зелёный.
