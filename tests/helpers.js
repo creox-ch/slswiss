@@ -17,7 +17,8 @@ async function registerUser(page, email = TEST_EMAIL, pwd = TEST_PASSWORD) {
   await page.selectOption('#rs2-canton', 'Zürich');
   await page.fill('#rs2-plz', '8001');
   await page.click('button:has-text("Далее")');
-  // Step 3: interests + create
+  // Step 3: interests + consent + create
+  await page.check('#reg-consent'); // legal-consent: обязательное согласие
   await page.click('button:has-text("Создать аккаунт")');
   return { email, pwd };
 }

@@ -66,6 +66,7 @@ async function fillStepsAndSubmit(page, { first, last, email, pwd, canton, plz }
   await page.fill('#rs2-plz', plz);
   await page.locator('#rs2 button:has-text("Далее")').click();
   await expect(page.locator('#rs3')).toBeVisible();
+  await page.check('#reg-consent'); // legal-consent: обязательное согласие
   await page.click('button:has-text("Создать аккаунт")');
 }
 

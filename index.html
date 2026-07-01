@@ -53,6 +53,43 @@ function _wireDraft(name, ids) {
 }
 function _clearDraft(name) { try { localStorage.removeItem(_draftKey(name)); } catch (e) {} }
 
+// legal-consent: правовая модалка (Impressum / Datenschutz / AGB — краткие черновики)
+function showLegal() {
+  if (document.getElementById('legal-overlay')) { return; }
+  var o = document.createElement('div');
+  o.id = 'legal-overlay';
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(13,27,42,.6);z-index:900;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);';
+  o.innerHTML = '<div style="background:#fff;border-radius:20px;padding:28px 30px;width:600px;max-width:94vw;max-height:88vh;overflow-y:auto;position:relative;font-size:13px;line-height:1.6;color:#333;">' +
+    '<button id="legal-close" style="position:absolute;top:14px;right:14px;background:#f0f0f0;border:none;width:30px;height:30px;border-radius:8px;font-size:16px;cursor:pointer;">✕</button>' +
+    '<h2 style="font-size:20px;font-weight:800;margin-bottom:10px;font-family:Plus Jakarta Sans,sans-serif;">Правовая информация</h2>' +
+    '<div style="background:#FFF6E0;color:#B7791F;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:16px;">⚠️ Черновик — тексты в подготовке, требуют юридической проверки.</div>' +
+    '<h3 style="margin:10px 0 6px;">Impressum</h3>' +
+    '<p>Kseniia Chudina Art + Event · Bäderstrasse 28, 5400 Baden (AG), Switzerland · info@kunstwerkstube.ch</p>' +
+    '<h3 style="margin:14px 0 6px;">Конфиденциальность (Datenschutz)</h3>' +
+    '<p>При регистрации обрабатываем имя, email, кантон, PLZ. Обработчики: Supabase (база и вход), Resend (письма подтверждения), GitHub Pages (хостинг). Хранилище — только технически необходимое (сессия, черновики форм), без трекинга. Права по DSG/GDPR: доступ, исправление, удаление — по email выше.</p>' +
+    '<h3 style="margin:14px 0 6px;">Условия (AGB)</h3>' +
+    '<p>Бесплатный аккаунт; заявки в каталог и события проходят модерацию; ответственность ограничена; применимое право — швейцарское, юрисдикция Baden (AG).</p>' +
+    '</div>';
+  document.body.appendChild(o);
+  document.getElementById('legal-close').onclick = function() { o.remove(); };
+  o.addEventListener('click', function(e) { if (e.target === o) { o.remove(); } });
+}
+
+// legal-consent: информационный cookie-баннер (только essential-хранилище). z-index 500 = ПОД модалками.
+function _cookieAcked() { try { return localStorage.getItem('sls-cookie-ack') === '1'; } catch (e) { return false; } }
+function showCookieBanner() {
+  if (_cookieAcked() || document.getElementById('cookie-banner')) { return; }
+  var b = document.createElement('div');
+  b.id = 'cookie-banner';
+  // pointer-events:none на контейнере — баннер не перехватывает клики по контенту под ним
+  // (кнопка/ссылка возвращают pointer-events:auto). Так баннер не ломает существующие тесты.
+  b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:500;background:#0D1B2A;color:#fff;border-radius:12px;padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:none;';
+  b.innerHTML = '<span style="flex:1;min-width:200px;">Используем только технически необходимые данные (сессия входа, черновики форм), без трекинга. <a onclick="showLegal()" style="color:#6EC1FF;cursor:pointer;text-decoration:underline;pointer-events:auto;">Подробнее</a></span>' +
+    '<button id="cookie-ok" style="background:#00AEEF;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;pointer-events:auto;">Хорошо</button>';
+  document.body.appendChild(b);
+  document.getElementById('cookie-ok').onclick = function() { try { localStorage.setItem('sls-cookie-ack', '1'); } catch (e) {} b.remove(); };
+}
+
 // Имя из метаданных провайдера. Google отдаёт full_name/name (и иногда
 // given_name/family_name), а не first_name/last_name. Возвращает {first,last}.
 function deriveName(md) {
@@ -293,7 +330,7 @@ function showEventForm() {
     '<textarea id="event-desc" rows="4" placeholder="О чём событие, кого ждёшь..." style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;"></textarea></div>' +
     '<div id="event-form-err" style="display:none;font-size:12px;color:#D52B1E;margin-bottom:10px;"></div>' +
     '<button id="event-submit" onclick="submitEvent()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Опубликовать событие →</button>' +
-    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором</p>' +
+    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором. Отправляя, ты принимаешь <a onclick="showLegal()" style="color:var(--brand);cursor:pointer;">условия</a>.</p>' +
     '</div>';
   document.body.appendChild(overlay);
   _wireDraft('event', ['event-title', 'event-date', 'event-canton', 'event-location', 'event-desc']); // draft-persistence
@@ -468,7 +505,7 @@ function showBusinessForm() {
     '<input id="biz-tg" type="text" placeholder="@username" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;box-sizing:border-box;"></div></div>' +
     '<div id="biz-form-err" style="display:none;font-size:12px;color:#D52B1E;margin-bottom:10px;"></div>' +
     '<button id="biz-submit" onclick="submitBusiness()" style="width:100%;background:#00AEEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Добавить в каталог →</button>' +
-    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором · Бесплатно</p>' +
+    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Появится после проверки модератором · Бесплатно. Отправляя, ты принимаешь <a onclick="showLegal()" style="color:var(--brand);cursor:pointer;">условия</a>.</p>' +
     '</div>';
   document.body.appendChild(overlay);
   _wireDraft('biz', ['biz-name', 'biz-cat', 'biz-canton', 'biz-desc', 'biz-web', 'biz-tg']); // draft-persistence
@@ -1008,6 +1045,27 @@ function regStep(n) {
 function handleRegStep1() { if (!validateRegStep1()) { return; } regStep(2); }
 function handleRegStep2() { if (!validateRegStep2()) { return; } regStep(3); }
 function handleRegFinish() { loginDemo(); }
+
+// legal-consent: завершение регистрации — требует согласия с AGB/Datenschutz
+function finishRegistration() {
+  var consent = document.getElementById('reg-consent');
+  if (!consent || !consent.checked) {
+    var err = document.getElementById('reg-consent-err');
+    if (err) { err.style.display = 'block'; }
+    return;
+  }
+  var err2 = document.getElementById('reg-consent-err');
+  if (err2) { err2.style.display = 'none'; }
+  var e = document.getElementById('rs1-email');
+  var p = document.getElementById('rs1-pwd');
+  var fn = document.getElementById('rs1-first');
+  var ln = document.getElementById('rs1-last');
+  var canton = document.getElementById('rs2-canton');
+  var plz = document.getElementById('rs2-plz');
+  if (e && p && e.value && p.value) {
+    sbSignUp(e.value, p.value, fn ? fn.value : '', ln ? ln.value : '', canton ? canton.value : '', plz ? plz.value : '');
+  } else { loginDemo(); }
+}
 
 // --- Валидация формы регистрации (контракт registration-fix) ---
 function _setErr(id, show) { var el = document.getElementById(id); if (el) { el.style.display = show ? 'block' : 'none'; } }
@@ -1946,6 +2004,7 @@ function addGoal() {
 // ================================================================
 document.addEventListener('DOMContentLoaded', function() {
   initCantonSelects(); // cantons-fix: единый список 26 в #rs2-canton и #prof-canton
+  showCookieBanner();  // legal-consent: инфо-баннер о cookie (z-500, под модалками)
   // Подключаемся к Supabase при загрузке страницы (создаёт _supabase и
   // восстанавливает сессию). Без этого вход сваливается в demo-режим, а
   // сохранение профиля отвечает «не авторизован».
@@ -4234,19 +4293,14 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
             <span class="int-pill" onclick="this.classList.toggle('sel')">🧑 14+ лет</span>
           </div>
         </div>
+        <div style="margin-bottom:10px;font-size:12px;color:#555;display:flex;align-items:flex-start;gap:8px;">
+          <input type="checkbox" id="reg-consent" style="margin-top:2px;flex-shrink:0;">
+          <label for="reg-consent">Я принимаю <a onclick="showLegal()" style="color:var(--brand);cursor:pointer;text-decoration:underline;">AGB и Политику конфиденциальности</a></label>
+        </div>
+        <div id="reg-consent-err" style="display:none;font-size:11px;color:#D52B1E;margin-bottom:8px;">Нужно принять условия, чтобы продолжить</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button class="btn-login" style="padding:10px;" onclick="handleRegStep2()">← Назад</button>
-          <button class="btn-hero" style="padding:10px;" onclick="(function(){
-  var e=document.getElementById('rs1-email');
-  var p=document.getElementById('rs1-pwd');
-  var fn=document.getElementById('rs1-first');
-  var ln=document.getElementById('rs1-last');
-  var canton=document.getElementById('rs2-canton');
-  var plz=document.getElementById('rs2-plz');
-  if(e&&p&&e.value&&p.value){
-    sbSignUp(e.value,p.value,fn?fn.value:'',ln?ln.value:'',canton?canton.value:'',plz?plz.value:'');
-  } else { loginDemo(); }
-})()">Создать аккаунт 🎉</button>
+          <button class="btn-hero" id="reg-finish-btn" style="padding:10px;" onclick="finishRegistration()">Создать аккаунт 🎉</button>
         </div>
       </div>
     </div>
