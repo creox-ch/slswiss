@@ -573,6 +573,7 @@ function moderateRow(table, id, decision, btn, okMsg) {
     }
     if (row) { row.remove(); }
     showNotif(okMsg || (decision === 'approved' ? '✅ Одобрено' : '🚫 Отклонено'));
+    _updateModBadge(); // счётчик pending мог измениться
     var box = document.getElementById('mod-list');
     if (box && !box.querySelector('.mod-row')) {
       box.innerHTML = '<div id="mod-empty" style="text-align:center;color:#999;padding:30px;">Пока нет заявок</div>';
@@ -1123,6 +1124,19 @@ function logOut() {
   initSupabase();
   updateEmptyStates();
 }
+// B6: счётчик заявок на модерации на кнопке «Модерация» (только админ видит кнопку)
+function _updateModBadge() {
+  if (!_supabase) { return; }
+  Promise.all([
+    _supabase.from('services').select('id', { count: 'exact', head: true }).eq('status', 'pending_moderation'),
+    _supabase.from('events').select('id', { count: 'exact', head: true }).eq('status', 'pending_moderation')
+  ]).then(function(res) {
+    var n = ((res[0] && res[0].count) || 0) + ((res[1] && res[1].count) || 0);
+    var el = document.getElementById('mod-btn');
+    if (el) { el.textContent = n > 0 ? '🛡 Модерация (' + n + ')' : '🛡 Модерация'; }
+  });
+}
+
 function renderNav(p) {
   var nr = document.getElementById('nav-right');
   if (!nr) return;
@@ -1156,6 +1170,7 @@ function renderNav(p) {
     mb.onclick = openModeration;
     nr.appendChild(wrap);
     nr.appendChild(mb);
+    _updateModBadge(); // B6: дописать счётчик pending в текст кнопки
   } else {
     nr.appendChild(wrap);
   }
@@ -1208,6 +1223,37 @@ function switchTab(group, tab, el) {
 // ================================================================
 // PROFILE TABS
 // ================================================================
+// E4 (in-app): автор видит статус своих заявок в профиле.
+// RLS «Auth read own» пускает автора к своим строкам любого статуса.
+function _statusBadge(s) {
+  if (s === 'approved') return '<span style="background:#E6F7ED;color:#1AAE5A;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">✅ Опубликовано</span>';
+  if (s === 'rejected') return '<span style="background:#FDECEC;color:#D52B1E;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">🚫 Отклонено</span>';
+  return '<span style="background:#FFF6E0;color:#B7791F;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">🕓 На модерации</span>';
+}
+function _mySubRow(table, id, ttl, meta, status) {
+  return '<div class="my-sub" data-table="' + table + '" data-id="' + id + '" style="border:1px solid #eee;border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+    '<div><div style="font-weight:700;font-size:13px;">' + _pubEsc(ttl) + '</div><div style="font-size:11px;color:#888;">' + _pubEsc(meta) + '</div></div>' +
+    _statusBadge(status) + '</div>';
+}
+function loadMyBusinesses() {
+  var box = document.getElementById('my-biz-list');
+  if (!box || !_supabase || !_profile) { return; }
+  _supabase.from('services').select('id,name,category,canton,status,created_at').eq('owner_id', _profile.id).order('created_at', { ascending: false }).then(function(res) {
+    var rows = (res && res.data) || [];
+    box.innerHTML = rows.length ? '<h3 style="margin-bottom:10px;">🗂️ Мои заявки в каталог</h3>' +
+      rows.map(function(r) { return _mySubRow('services', r.id, r.name, (r.category || '') + (r.canton ? ' · ' + r.canton : ''), r.status); }).join('') : '';
+  });
+}
+function loadMyEvents() {
+  var box = document.getElementById('my-events-list');
+  if (!box || !_supabase || !_profile) { return; }
+  _supabase.from('events').select('id,title,canton,event_date,status,created_at').eq('created_by', _profile.id).order('created_at', { ascending: false }).then(function(res) {
+    var rows = (res && res.data) || [];
+    box.innerHTML = rows.length ? '<h3 style="margin-bottom:10px;">📅 Мои заявки на события</h3>' +
+      rows.map(function(r) { var w = r.event_date ? new Date(r.event_date).toLocaleDateString('ru-RU') : ''; return _mySubRow('events', r.id, r.title, (r.canton || '') + (w ? ' · ' + w : ''), r.status); }).join('') : '';
+  });
+}
+
 function showPTab(tab, el) {
   document.querySelectorAll('.ptab').forEach(function(t) {
     t.classList.remove('active');
@@ -1218,6 +1264,8 @@ function showPTab(tab, el) {
   var target = document.getElementById('ptab-' + tab);
   if (target) target.classList.add('active');
   if (el) el.classList.add('active');
+  if (tab === 'biz') { loadMyBusinesses(); }   // E4: мои заявки в каталог со статусом
+  if (tab === 'events') { loadMyEvents(); }    // E4: мои заявки на события со статусом
 }
 
 // ================================================================
@@ -3858,6 +3906,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
 
       <!-- ── BUSINESS ── -->
       <div class="ptab" id="ptab-biz">
+        <div class="p-panel" id="my-biz-list" style="margin-bottom:14px;"></div>
         <div class="p-panel">
           <div style="display:inline-flex;align-items:center;gap:6px;background:var(--gold-light);border:1px solid rgba(240,165,0,.3);color:var(--gold);font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 10px;border-radius:20px;margin-bottom:14px;text-transform:uppercase;">✦ Требует Бизнес Старт или Про</div>
           <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px;">Бизнес-профиль</div>
@@ -3961,6 +4010,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
 
       <!-- ── EVENTS ── -->
       <div class="ptab" id="ptab-events">
+        <div class="p-panel" id="my-events-list" style="margin-bottom:14px;"></div>
         <div class="p-panel">
           <h3>📅 Мои события</h3>
           <div style="display:flex;flex-direction:column;">

@@ -55,6 +55,37 @@ test.describe('БЛОК 12 — Модерация: доступ', () => {
     await page.goto('');
     await expect(page.locator('#mod-btn')).toHaveCount(0);
   });
+
+  test('12.3 — не-админ: кнопки нет, openModeration отказывает (A4)', async ({ page, request }) => {
+    test.skip(!hasAdmin, 'нужен SUPABASE_SERVICE_KEY');
+    const naEmail = `nonadmin_${Date.now()}@slswiss-test.com`;
+    const res = await request.post(`${SUPABASE_URL}/auth/v1/admin/users`, {
+      headers: adminHeaders(),
+      data: { email: naEmail, password: 'TestPass123!', email_confirm: true, user_metadata: { first_name: 'No', last_name: 'Admin', canton: 'Zürich', plz: '8001' } },
+    });
+    const user = res.ok() ? await res.json() : null;
+    const uid = user && user.id;
+    expect(uid).toBeTruthy();
+    try {
+      await loginUser(page, naEmail, 'TestPass123!');
+      await expect(page.locator('#mod-btn')).toHaveCount(0);            // кнопки нет
+      await page.evaluate(() => window.openModeration());
+      await expect(page.locator('#moderation-overlay')).toHaveCount(0); // оверлей не создался
+    } finally {
+      await request.delete(`${SUPABASE_URL}/auth/v1/admin/users/${uid}`, { headers: adminHeaders() });
+    }
+  });
+
+  test('12.4 — бейдж-счётчик заявок на кнопке (B6)', async ({ page, request }) => {
+    test.skip(!hasAdmin, 'нужен SUPABASE_SERVICE_KEY + TEST_USER is_admin');
+    const id = await seedPending(request, 'services', { name: `E2E-BADGE-${Date.now()}`, description: 'badge' });
+    try {
+      await loginUser(page, email, pwd);
+      await expect(page.locator('#mod-btn')).toHaveText(/Модерация \(\d+\)/, { timeout: 15000 });
+    } finally {
+      await sbDelete(request, 'services', id);
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -145,6 +176,67 @@ test.describe('БЛОК 13 — Модерация: решения', () => {
       await expect(page.locator(`.event-card[data-id="${id}"]`)).toHaveCount(0);
     } finally {
       await sbDelete(request, 'events', id);
+    }
+  });
+
+  test('13.5 — двойной клик по «Одобрить» шлёт один update (D5)', async ({ page, request }) => {
+    const name = `E2E-MOD-DBL-${Date.now()}`;
+    const id = await seedPending(request, 'services', { name, description: 'dbl' });
+    let patchCount = 0;
+    page.on('request', (r) => { if (r.method() === 'PATCH' && r.url().includes('/rest/v1/services')) patchCount++; });
+    try {
+      await page.evaluate(() => window.openModeration());
+      const row = page.locator(`.mod-row[data-id="${id}"]`);
+      await expect(row).toBeVisible({ timeout: 15000 });
+      // два синхронных клика: второй попадает на уже disabled-кнопку (гвард) → один update
+      await row.locator('.mod-approve').evaluate((el) => { el.click(); el.click(); });
+      await expect(row).toHaveCount(0, { timeout: 15000 });
+      await page.waitForTimeout(500);
+      expect(patchCount).toBe(1);
+      expect(await sbStatus(request, 'services', id)).toBe('approved');
+    } finally {
+      await sbDelete(request, 'services', id);
+    }
+  });
+
+  test('13.6 — ошибка сети при решении: не ложный success, строка остаётся (D6)', async ({ page, request }) => {
+    const name = `E2E-MOD-NETERR-${Date.now()}`;
+    const id = await seedPending(request, 'services', { name, description: 'neterr' });
+    try {
+      await page.evaluate(() => window.openModeration());
+      const row = page.locator(`.mod-row[data-id="${id}"]`);
+      await expect(row).toBeVisible({ timeout: 15000 });
+      await page.route('**/rest/v1/services*', (route) => (route.request().method() === 'PATCH' ? route.abort() : route.continue()));
+      await row.locator('.mod-approve').click();
+      await expect(row).toBeVisible({ timeout: 8000 });                 // не исчезла (нет ложного success)
+      await expect(row.locator('.mod-approve')).toBeEnabled();          // кнопка снова активна
+      expect(await sbStatus(request, 'services', id)).toBe('pending_moderation'); // статус не изменился
+      await page.unroute('**/rest/v1/services*');
+    } finally {
+      await sbDelete(request, 'services', id);
+    }
+  });
+
+  test('13.7 — вернуть из скрытых: rejected → approved, появляется в каталоге (D9)', async ({ page, request }) => {
+    const name = `E2E-MOD-REPUB-${Date.now()}`;
+    const ins = await request.post(`${SUPABASE_URL}/rest/v1/services`, {
+      headers: { ...adminHeaders(), Prefer: 'return=representation' },
+      data: { name, description: 'repub', status: 'rejected' },
+    });
+    const created = ins.ok() ? await ins.json() : [];
+    const id = created[0] && created[0].id;
+    expect(id).toBeTruthy();
+    try {
+      await page.evaluate(() => window.openModeration());
+      const row = page.locator(`.mod-row[data-id="${id}"]`);
+      await expect(row).toBeVisible({ timeout: 15000 });                // в секции «Скрытые»
+      await row.locator('.mod-republish').click();
+      await expect(row).toHaveCount(0, { timeout: 15000 });
+      expect(await sbStatus(request, 'services', id)).toBe('approved');
+      await page.evaluate(() => window.goPage('catalog'));
+      await expect(page.locator(`.biz-card[data-id="${id}"]`)).toBeVisible({ timeout: 15000 });
+    } finally {
+      await sbDelete(request, 'services', id);
     }
   });
 });
