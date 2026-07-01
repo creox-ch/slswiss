@@ -852,8 +852,65 @@ function goPage(name) {
   if (nav) { nav.classList.add('active'); }
   if (name === 'deals') { updateDealsVisibility(); }
   if (name === 'home' || name === 'afisha') { setTimeout(updateEmptyStates, 50); }
+  if (name === 'catalog') { setTimeout(loadPublicCatalog, 30); }
+  if (name === 'afisha') { setTimeout(loadPublicAfisha, 30); }
   if (name === 'profile') { setTimeout(loadProfileForm, 50); }
   window.scrollTo(0, 0);
+}
+
+// ================================================================
+// PUBLIC LISTINGS — показ одобренных заявок (catalog-display)
+// approved и так публичны по RLS. Читаем и рендерим на публичных страницах.
+// ================================================================
+function _pubEsc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function loadPublicCatalog() {
+  var grid = document.getElementById('biz-grid');
+  if (!grid || !_supabase) { return; }
+  _supabase.from('services').select('id,name,category,canton,description,website,telegram')
+    .eq('status', 'approved').order('created_at', { ascending: false }).then(function(res) {
+    var rows = (res && res.data) || [];
+    if (!rows.length) { return; } // оставляем статичную заглушку «Каталог пополняется»
+    grid.innerHTML = rows.map(_bizCardHtml).join('');
+  });
+}
+function _bizCardHtml(r) {
+  var web = /^https?:\/\//i.test(r.website || '') ? r.website : '';
+  var contacts = '';
+  if (web) { contacts += '<a href="' + _pubEsc(web) + '" target="_blank" rel="noopener" style="color:var(--brand);font-size:12px;font-weight:600;text-decoration:none;">🌐 Сайт</a>'; }
+  if (r.telegram) { contacts += '<span style="color:var(--mid);font-size:12px;">✈️ ' + _pubEsc(r.telegram) + '</span>'; }
+  return '<div class="biz-card" data-id="' + r.id + '" style="background:#fff;border:1px solid #eee;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;">' +
+    '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:16px;color:var(--charcoal);">' + _pubEsc(r.name) + '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;">' +
+    (r.category ? '<span style="background:var(--brand-light);color:var(--brand-dark);padding:3px 8px;border-radius:6px;font-weight:700;">' + _pubEsc(r.category) + '</span>' : '') +
+    (r.canton ? '<span style="background:#f2f2f2;color:#666;padding:3px 8px;border-radius:6px;font-weight:700;">📍 ' + _pubEsc(r.canton) + '</span>' : '') +
+    '</div>' +
+    '<div style="font-size:13px;color:var(--mid);line-height:1.5;">' + _pubEsc((r.description || '').slice(0, 180)) + '</div>' +
+    (contacts ? '<div style="display:flex;gap:12px;margin-top:4px;">' + contacts + '</div>' : '') +
+    '</div>';
+}
+
+function loadPublicAfisha() {
+  var pane = document.getElementById('afisha-ev');
+  if (!pane || !_supabase) { return; }
+  _supabase.from('events').select('id,title,canton,event_date,location,description')
+    .eq('status', 'approved').order('event_date', { ascending: true }).then(function(res) {
+    var rows = (res && res.data) || [];
+    if (!rows.length) { return; } // оставляем статичную заглушку «Событий пока нет»
+    pane.innerHTML = '<div class="section"><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">' + rows.map(_eventCardHtml).join('') + '</div></div>';
+  });
+}
+function _eventCardHtml(r) {
+  var when = r.event_date ? new Date(r.event_date).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  return '<div class="event-card" data-id="' + r.id + '" style="background:#fff;border:1px solid #eee;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;">' +
+    '<div style="font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:800;font-size:16px;color:var(--charcoal);">' + _pubEsc(r.title) + '</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;">' +
+    (when ? '<span style="background:var(--brand-light);color:var(--brand-dark);padding:3px 8px;border-radius:6px;font-weight:700;">📅 ' + _pubEsc(when) + '</span>' : '') +
+    (r.canton ? '<span style="background:#f2f2f2;color:#666;padding:3px 8px;border-radius:6px;font-weight:700;">📍 ' + _pubEsc(r.canton) + '</span>' : '') +
+    '</div>' +
+    (r.location ? '<div style="font-size:12px;color:#888;">' + _pubEsc(r.location) + '</div>' : '') +
+    '<div style="font-size:13px;color:var(--mid);line-height:1.5;">' + _pubEsc((r.description || '').slice(0, 180)) + '</div>' +
+    '</div>';
 }
 
 // ================================================================
