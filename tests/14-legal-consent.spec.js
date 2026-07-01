@@ -50,4 +50,12 @@ test.describe('БЛОК 20 — legal-consent', () => {
     await page.waitForTimeout(300);
     expect(signupSent).toBe(false);                               // регистрация не ушла
   });
+
+  test('20.4 — футер: юр-документ раскрывается по клику', async ({ page }) => {
+    await page.goto('');
+    await expect(page.locator('#legal-acc-imp')).toBeHidden(); // свёрнут по умолчанию
+    await page.locator('footer').getByText('Impressum', { exact: false }).first().click();
+    await expect(page.locator('#legal-acc-imp')).toBeVisible();
+    await expect(page.locator('#legal-acc-imp')).toContainText('Baden');
+  });
 });

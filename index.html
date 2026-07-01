@@ -86,6 +86,16 @@ function showLegal() {
   o.addEventListener('click', function(e) { if (e.target === o) { o.remove(); } });
 }
 
+// legal-consent: раскрытие юр-документа в футере (аккордеон)
+function toggleLegalAcc(id) {
+  var c = document.getElementById('legal-acc-' + id);
+  var ind = document.getElementById('legal-ind-' + id);
+  if (!c) { return; }
+  var open = c.style.display !== 'none';
+  c.style.display = open ? 'none' : 'block';
+  if (ind) { ind.textContent = open ? '＋' : '－'; }
+}
+
 // legal-consent: информационный cookie-баннер (только essential-хранилище). z-index 500 = ПОД модалками.
 function _cookieAcked() { try { return localStorage.getItem('sls-cookie-ack') === '1'; } catch (e) { return false; } }
 function showCookieBanner() {
@@ -4349,13 +4359,46 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
   </div>
 </div>
 
-<footer>
-  <p>© 2025 SoiLüDi Community · Русскоязычное сообщество Швейцарии</p>
-  <div class="footer-links">
-    <a onclick="goPage('home')">Главная</a>
-    <a onclick="goPage('cantons')">Кантоны</a>
-    <a onclick="goPage('articles')">Статьи</a>
-    <a onclick="showModal()">Клуб</a>
+<footer style="flex-direction:column;align-items:stretch;gap:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
+    <p>© 2025 SoiLüDi Community · Русскоязычное сообщество Швейцарии</p>
+    <div class="footer-links">
+      <a onclick="goPage('home')">Главная</a>
+      <a onclick="goPage('cantons')">Кантоны</a>
+      <a onclick="goPage('articles')">Статьи</a>
+      <a onclick="showModal()">Клуб</a>
+    </div>
+  </div>
+  <div style="width:100%;max-width:920px;margin:0 auto;border-top:1px solid rgba(255,255,255,.12);padding-top:14px;">
+    <div style="font-weight:700;color:#fff;font-size:12px;margin-bottom:4px;">Правовая информация</div>
+    <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px;">⚠️ Черновики — требуют юридической проверки перед боевым запуском.</div>
+
+    <div onclick="toggleLegalAcc('imp')" style="cursor:pointer;padding:9px 0;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;color:rgba(255,255,255,.85);font-size:13px;font-weight:600;">Impressum <span id="legal-ind-imp">＋</span></div>
+    <div id="legal-acc-imp" style="display:none;color:rgba(255,255,255,.65);font-size:12px;line-height:1.6;padding:2px 0 10px;">
+      <p>Ответственное лицо: Kseniia Chudina Art + Event · Kseniia Chudina · Bäderstrasse 28, 5400 Baden (AG), Switzerland · info@kunstwerkstube.ch</p>
+      <p>Проект: slswiss.ch — платформа-сообщество для русскоязычных в Швейцарии. К добавлению: UID/CHE-номер, телефон.</p>
+    </div>
+
+    <div onclick="toggleLegalAcc('dat')" style="cursor:pointer;padding:9px 0;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;color:rgba(255,255,255,.85);font-size:13px;font-weight:600;">Datenschutzerklärung <span id="legal-ind-dat">＋</span></div>
+    <div id="legal-acc-dat" style="display:none;color:rgba(255,255,255,.65);font-size:12px;line-height:1.6;padding:2px 0 10px;">
+      <p><b>1. Ответственное лицо.</b> Kseniia Chudina Art + Event, Bäderstrasse 28, 5400 Baden (AG), info@kunstwerkstube.ch.</p>
+      <p><b>2. Какие данные.</b> При регистрации: имя, фамилия, email, кантон, PLZ, пароль (зашифрован). Контент: заявки в каталог и события. Технические: серверные логи хостинга.</p>
+      <p><b>3. Цель.</b> Работа платформы: аккаунт, публикация одобренного, связь по заявкам. Не передаём третьим лицам для маркетинга.</p>
+      <p><b>4. Обработчики.</b> Supabase (база и вход, серверы в ЕС), Resend (письма подтверждения), GitHub Pages (хостинг).</p>
+      <p><b>5. Cookies и хранилище.</b> Только технически необходимое (сессия, черновики форм). Трекинга нет.</p>
+      <p><b>6. Права (DSG/GDPR).</b> Доступ, исправление, удаление, экспорт, отзыв согласия — на email выше.</p>
+      <p><b>7. Хранение.</b> Пока аккаунт активен; по запросу — удаление.</p>
+    </div>
+
+    <div onclick="toggleLegalAcc('agb')" style="cursor:pointer;padding:9px 0;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;color:rgba(255,255,255,.85);font-size:13px;font-weight:600;">AGB (Условия) <span id="legal-ind-agb">＋</span></div>
+    <div id="legal-acc-agb" style="display:none;color:rgba(255,255,255,.65);font-size:12px;line-height:1.6;padding:2px 0 12px;">
+      <p><b>1. Область применения.</b> Для всех пользователей slswiss.ch (оператор — Kseniia Chudina Art + Event).</p>
+      <p><b>2. Услуги.</b> Бесплатный аккаунт: профиль, заявки в каталог и события (проходят модерацию, публикуются после одобрения). Платные функции — в будущем, цены в CHF.</p>
+      <p><b>3. Регистрация.</b> По email с подтверждением. Пользователь отвечает за достоверность данных и сохранность пароля.</p>
+      <p><b>4. Контент и модерация.</b> Пользователь отвечает за законность контента. Оператор вправе отклонить или снять заявку. Запрещён противоправный, оскорбительный, спам-контент.</p>
+      <p><b>5. Ответственность.</b> Ограничена умыслом и грубой неосторожностью. Платформа «как есть», без гарантии непрерывной доступности.</p>
+      <p><b>6. Право и юрисдикция.</b> Швейцарское право, место юрисдикции — Baden (AG).</p>
+    </div>
   </div>
 </footer>
 
