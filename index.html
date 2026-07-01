@@ -62,13 +62,24 @@ function showLegal() {
   o.innerHTML = '<div style="background:#fff;border-radius:20px;padding:28px 30px;width:600px;max-width:94vw;max-height:88vh;overflow-y:auto;position:relative;font-size:13px;line-height:1.6;color:#333;">' +
     '<button id="legal-close" style="position:absolute;top:14px;right:14px;background:#f0f0f0;border:none;width:30px;height:30px;border-radius:8px;font-size:16px;cursor:pointer;">✕</button>' +
     '<h2 style="font-size:20px;font-weight:800;margin-bottom:10px;font-family:Plus Jakarta Sans,sans-serif;">Правовая информация</h2>' +
-    '<div style="background:#FFF6E0;color:#B7791F;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:16px;">⚠️ Черновик — тексты в подготовке, требуют юридической проверки.</div>' +
-    '<h3 style="margin:10px 0 6px;">Impressum</h3>' +
-    '<p>Kseniia Chudina Art + Event · Bäderstrasse 28, 5400 Baden (AG), Switzerland · info@kunstwerkstube.ch</p>' +
-    '<h3 style="margin:14px 0 6px;">Конфиденциальность (Datenschutz)</h3>' +
-    '<p>При регистрации обрабатываем имя, email, кантон, PLZ. Обработчики: Supabase (база и вход), Resend (письма подтверждения), GitHub Pages (хостинг). Хранилище — только технически необходимое (сессия, черновики форм), без трекинга. Права по DSG/GDPR: доступ, исправление, удаление — по email выше.</p>' +
-    '<h3 style="margin:14px 0 6px;">Условия (AGB)</h3>' +
-    '<p>Бесплатный аккаунт; заявки в каталог и события проходят модерацию; ответственность ограничена; применимое право — швейцарское, юрисдикция Baden (AG).</p>' +
+    '<div style="background:#FFF6E0;color:#B7791F;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:16px;">⚠️ Черновики — требуют юридической проверки перед боевым запуском. Реквизиты юрлица — с kunstwerkstube.ch (то же юрлицо).</div>' +
+    '<h3 style="margin:12px 0 6px;">Impressum</h3>' +
+    '<p><strong>Ответственное лицо:</strong> Kseniia Chudina Art + Event · Kseniia Chudina · Bäderstrasse 28, 5400 Baden (AG), Switzerland · info@kunstwerkstube.ch<br>Проект: slswiss.ch — платформа-сообщество для русскоязычных в Швейцарии.<br><em>К добавлению: UID/CHE-номер, телефон.</em></p>' +
+    '<h3 style="margin:16px 0 6px;">Datenschutzerklärung (Политика конфиденциальности)</h3>' +
+    '<p><strong>1. Ответственное лицо.</strong> Kseniia Chudina Art + Event, Bäderstrasse 28, 5400 Baden (AG), info@kunstwerkstube.ch.</p>' +
+    '<p><strong>2. Какие данные.</strong> При регистрации: имя, фамилия, email, кантон, PLZ, пароль (в зашифрованном виде). Пользовательский контент: заявки в каталог и события. Технические: серверные логи у хостинг-провайдера.</p>' +
+    '<p><strong>3. Цель.</strong> Работа платформы: аккаунт, публикация одобренного контента, связь по заявкам. Данные не передаются третьим лицам для маркетинга.</p>' +
+    '<p><strong>4. Обработчики.</strong> Supabase (база данных и аутентификация, серверы в ЕС), Resend (письма подтверждения), GitHub Pages (хостинг сайта).</p>' +
+    '<p><strong>5. Cookies и хранилище.</strong> Только технически необходимое (сессия входа, черновики форм в localStorage). Трекинга и аналитики нет.</p>' +
+    '<p><strong>6. Ваши права (DSG/GDPR).</strong> Доступ, исправление, удаление, экспорт, отзыв согласия — запрос на email выше.</p>' +
+    '<p><strong>7. Хранение.</strong> Данные хранятся, пока аккаунт активен; по запросу аккаунт и данные удаляются.</p>' +
+    '<h3 style="margin:16px 0 6px;">AGB (Условия использования)</h3>' +
+    '<p><strong>1. Область применения.</strong> Условия действуют для всех пользователей платформы slswiss.ch (оператор — Kseniia Chudina Art + Event).</p>' +
+    '<p><strong>2. Услуги.</strong> Бесплатный аккаунт: профиль, заявки в каталог и события (проходят модерацию, публикуются после одобрения). Платные функции — в будущем (карточка бизнеса, подписка), цены в CHF.</p>' +
+    '<p><strong>3. Регистрация.</strong> По email с подтверждением. Пользователь отвечает за достоверность данных и сохранность пароля.</p>' +
+    '<p><strong>4. Контент и модерация.</strong> Пользователь отвечает за законность контента. Оператор вправе отклонить или снять заявку с публикации. Запрещён противоправный, оскорбительный, спам-контент.</p>' +
+    '<p><strong>5. Ответственность.</strong> Ограничена случаями умысла и грубой неосторожности. Платформа предоставляется «как есть», без гарантии непрерывной доступности.</p>' +
+    '<p><strong>6. Право и юрисдикция.</strong> Швейцарское право. Место юрисдикции — Baden (AG).</p>' +
     '</div>';
   document.body.appendChild(o);
   document.getElementById('legal-close').onclick = function() { o.remove(); };
