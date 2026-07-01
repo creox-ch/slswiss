@@ -98,6 +98,30 @@ test.describe('БЛОК 13 — Модерация: решения', () => {
       await sbDelete(request, 'events', id);
     }
   });
+
+  test('13.3 — снять с публикации: approved → rejected, исчезает из каталога', async ({ page, request }) => {
+    const name = `E2E-MOD-UNPUB-${Date.now()}`;
+    const ins = await request.post(`${SUPABASE_URL}/rest/v1/services`, {
+      headers: { ...adminHeaders(), Prefer: 'return=representation' },
+      data: { name, description: 'published biz', status: 'approved' },
+    });
+    const created = ins.ok() ? await ins.json() : [];
+    const id = created[0] && created[0].id;
+    expect(id).toBeTruthy();
+    try {
+      await page.evaluate(() => window.openModeration());
+      const row = page.locator(`.mod-row[data-id="${id}"]`);
+      await expect(row).toBeVisible({ timeout: 15000 });          // в секции «Опубликовано»
+      await row.locator('.mod-unpublish').click();
+      await expect(row).toHaveCount(0, { timeout: 15000 });
+      expect(await sbStatus(request, 'services', id)).toBe('rejected');
+      // из публичного каталога исчез (публичны только approved)
+      await page.evaluate(() => window.goPage('catalog'));
+      await expect(page.locator(`.biz-card[data-id="${id}"]`)).toHaveCount(0);
+    } finally {
+      await sbDelete(request, 'services', id);
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────

@@ -492,7 +492,7 @@ function openModeration() {
     '<div style="background:#fff;border-radius:20px;padding:32px;width:680px;max-width:94vw;max-height:90vh;overflow-y:auto;position:relative;">' +
     '<button id="mod-close-btn" style="position:absolute;top:16px;right:16px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;">✕</button>' +
     '<h2 style="font-family:Plus Jakarta Sans,sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;">Модерация заявок</h2>' +
-    '<p style="font-size:13px;color:#666;margin-bottom:20px;">Одобренные становятся видны публично. Отклонённые скрыты.</p>' +
+    '<p style="font-size:13px;color:#666;margin-bottom:20px;">Одобряй, отклоняй и снимай с публикации. Публично видны только одобренные.</p>' +
     '<div id="mod-list"><div style="text-align:center;color:#999;padding:30px;">Загрузка…</div></div>' +
     '</div>';
   document.body.appendChild(overlay);
@@ -505,47 +505,62 @@ function openModeration() {
 function loadModerationList() {
   var box = document.getElementById('mod-list');
   if (!box || !_supabase) return;
+  var st = ['pending_moderation', 'approved', 'rejected'];
   Promise.all([
-    _supabase.from('services').select('id,name,category,canton,description,created_at').eq('status', 'pending_moderation').order('created_at', { ascending: true }),
-    _supabase.from('events').select('id,title,canton,event_date,description,created_at').eq('status', 'pending_moderation').order('created_at', { ascending: true })
+    _supabase.from('services').select('id,name,category,canton,description,status,created_at').in('status', st).order('created_at', { ascending: false }),
+    _supabase.from('events').select('id,title,canton,event_date,description,status,created_at').in('status', st).order('created_at', { ascending: false })
   ]).then(function(res) {
-    var svc = (res[0] && res[0].data) || [];
-    var evt = (res[1] && res[1].data) || [];
-    if (!svc.length && !evt.length) {
-      box.innerHTML = '<div id="mod-empty" style="text-align:center;color:#999;padding:30px;">Нет заявок на модерации</div>';
-      return;
-    }
-    var html = '';
-    if (svc.length) {
-      html += '<h3 style="font-size:14px;margin:8px 0;">🗂️ Каталог (' + svc.length + ')</h3>';
-      svc.forEach(function(r) { html += _modRowHtml('services', r.id, r.name, (r.category || '') + ' · ' + (r.canton || ''), r.description); });
-    }
-    if (evt.length) {
-      html += '<h3 style="font-size:14px;margin:16px 0 8px;">📅 События (' + evt.length + ')</h3>';
-      evt.forEach(function(r) { html += _modRowHtml('events', r.id, r.title, (r.canton || '') + (r.event_date ? ' · ' + new Date(r.event_date).toLocaleString('ru-RU') : ''), r.description); });
-    }
-    box.innerHTML = html;
-    box.querySelectorAll('.mod-approve').forEach(function(b) {
-      b.addEventListener('click', function() { var row = b.closest('.mod-row'); moderateRow(row.dataset.table, row.dataset.id, 'approved', b); });
-    });
-    box.querySelectorAll('.mod-reject').forEach(function(b) {
-      b.addEventListener('click', function() { var row = b.closest('.mod-row'); moderateRow(row.dataset.table, row.dataset.id, 'rejected', b); });
-    });
+    var svc = ((res[0] && res[0].data) || []).map(function(r) { r._t = 'services'; r._ttl = r.name; r._meta = (r.category || '') + ' · ' + (r.canton || ''); return r; });
+    var evt = ((res[1] && res[1].data) || []).map(function(r) { r._t = 'events'; r._ttl = r.title; r._meta = (r.canton || '') + (r.event_date ? ' · ' + new Date(r.event_date).toLocaleString('ru-RU') : ''); return r; });
+    var all = svc.concat(evt);
+    var g = { pending_moderation: [], approved: [], rejected: [] };
+    all.forEach(function(r) { if (g[r.status]) g[r.status].push(r); });
+    var html = _modSection('🕓 На модерации', g.pending_moderation, 'pending') +
+      _modSection('✅ Опубликовано', g.approved, 'published') +
+      _modSection('🚫 Скрытые', g.rejected, 'hidden');
+    box.innerHTML = html || '<div id="mod-empty" style="text-align:center;color:#999;padding:30px;">Пока нет заявок</div>';
+    _modBind(box);
   });
 }
 
-function _modRowHtml(table, id, title, meta, desc) {
-  return '<div class="mod-row" data-table="' + table + '" data-id="' + id + '" style="border:1px solid #eee;border-radius:12px;padding:12px 14px;margin-bottom:10px;">' +
-    '<div style="font-weight:700;font-size:14px;">' + _modEsc(title) + '</div>' +
-    '<div style="font-size:12px;color:#888;margin:2px 0 6px;">' + _modEsc(meta) + '</div>' +
-    '<div style="font-size:12px;color:#555;margin-bottom:10px;">' + _modEsc((desc || '').slice(0, 160)) + '</div>' +
-    '<div style="display:flex;gap:8px;">' +
-    '<button class="mod-approve" style="flex:1;background:#1AAE5A;color:#fff;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✓ Одобрить</button>' +
-    '<button class="mod-reject" style="flex:1;background:#fff;color:#D52B1E;border:1.5px solid #D52B1E;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✕ Отклонить</button>' +
-    '</div></div>';
+function _modSection(title, rows, mode) {
+  if (!rows.length) return '';
+  var h = '<h3 style="font-size:14px;margin:14px 0 8px;">' + title + ' (' + rows.length + ')</h3>';
+  rows.forEach(function(r) { h += _modRowHtml(r._t, r.id, r._ttl, r._meta, r.description, mode); });
+  return h;
 }
 
-function moderateRow(table, id, decision, btn) {
+function _modRowHtml(table, id, title, meta, desc, mode) {
+  var tag = table === 'services' ? '🗂️' : '📅';
+  var btns;
+  if (mode === 'published') {
+    btns = '<button class="mod-unpublish" style="flex:1;background:#fff;color:#D52B1E;border:1.5px solid #D52B1E;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">⨯ Снять с публикации</button>';
+  } else if (mode === 'hidden') {
+    btns = '<button class="mod-republish" style="flex:1;background:#1AAE5A;color:#fff;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✓ Опубликовать</button>';
+  } else {
+    btns = '<button class="mod-approve" style="flex:1;background:#1AAE5A;color:#fff;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✓ Одобрить</button>' +
+      '<button class="mod-reject" style="flex:1;background:#fff;color:#D52B1E;border:1.5px solid #D52B1E;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">✕ Отклонить</button>';
+  }
+  return '<div class="mod-row" data-table="' + table + '" data-id="' + id + '" style="border:1px solid #eee;border-radius:12px;padding:12px 14px;margin-bottom:10px;">' +
+    '<div style="font-weight:700;font-size:14px;">' + tag + ' ' + _modEsc(title) + '</div>' +
+    '<div style="font-size:12px;color:#888;margin:2px 0 6px;">' + _modEsc(meta) + '</div>' +
+    '<div style="font-size:12px;color:#555;margin-bottom:10px;">' + _modEsc((desc || '').slice(0, 160)) + '</div>' +
+    '<div style="display:flex;gap:8px;">' + btns + '</div></div>';
+}
+
+function _modBind(box) {
+  var wire = function(sel, status, msg) {
+    box.querySelectorAll(sel).forEach(function(b) {
+      b.addEventListener('click', function() { var row = b.closest('.mod-row'); moderateRow(row.dataset.table, row.dataset.id, status, b, msg); });
+    });
+  };
+  wire('.mod-approve', 'approved', '✅ Одобрено');
+  wire('.mod-reject', 'rejected', '🚫 Отклонено');
+  wire('.mod-unpublish', 'rejected', '⨯ Снято с публикации');
+  wire('.mod-republish', 'approved', '✅ Опубликовано');
+}
+
+function moderateRow(table, id, decision, btn, okMsg) {
   if (btn && btn.disabled) { return; } // защита от двойного клика
   var row = btn ? btn.closest('.mod-row') : null;
   if (row) { row.querySelectorAll('button').forEach(function(b) { b.disabled = true; }); }
@@ -557,10 +572,10 @@ function moderateRow(table, id, decision, btn) {
       return;
     }
     if (row) { row.remove(); }
-    showNotif(decision === 'approved' ? '✅ Одобрено' : '🚫 Отклонено');
+    showNotif(okMsg || (decision === 'approved' ? '✅ Одобрено' : '🚫 Отклонено'));
     var box = document.getElementById('mod-list');
     if (box && !box.querySelector('.mod-row')) {
-      box.innerHTML = '<div id="mod-empty" style="text-align:center;color:#999;padding:30px;">Нет заявок на модерации</div>';
+      box.innerHTML = '<div id="mod-empty" style="text-align:center;color:#999;padding:30px;">Пока нет заявок</div>';
     }
   });
 }
