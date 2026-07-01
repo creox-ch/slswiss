@@ -601,11 +601,13 @@ function loadModerationList() {
   var st = ['pending_moderation', 'approved', 'rejected'];
   Promise.all([
     _supabase.from('services').select('id,name,category,canton,description,status,created_at').in('status', st).order('created_at', { ascending: false }),
-    _supabase.from('events').select('id,title,canton,event_date,description,status,created_at').in('status', st).order('created_at', { ascending: false })
+    _supabase.from('events').select('id,title,canton,event_date,description,status,created_at').in('status', st).order('created_at', { ascending: false }),
+    _supabase.from('articles').select('id,title,topic,author_name,content,status,created_at').in('status', st).order('created_at', { ascending: false })
   ]).then(function(res) {
     var svc = ((res[0] && res[0].data) || []).map(function(r) { r._t = 'services'; r._ttl = r.name; r._meta = (r.category || '') + ' · ' + (r.canton || ''); return r; });
     var evt = ((res[1] && res[1].data) || []).map(function(r) { r._t = 'events'; r._ttl = r.title; r._meta = (r.canton || '') + (r.event_date ? ' · ' + new Date(r.event_date).toLocaleString('ru-RU') : ''); return r; });
-    var all = svc.concat(evt);
+    var art = ((res[2] && res[2].data) || []).map(function(r) { r._t = 'articles'; r._ttl = r.title; r._meta = 'Автор: ' + (r.author_name || '—') + (r.topic ? ' · ' + r.topic : ''); r.description = r.content; r._full = r.content; return r; });
+    var all = svc.concat(evt).concat(art);
     var g = { pending_moderation: [], approved: [], rejected: [] };
     all.forEach(function(r) { if (g[r.status]) g[r.status].push(r); });
     var html = _modSection('🕓 На модерации', g.pending_moderation, 'pending') +
@@ -619,12 +621,15 @@ function loadModerationList() {
 function _modSection(title, rows, mode) {
   if (!rows.length) return '';
   var h = '<h3 style="font-size:14px;margin:14px 0 8px;">' + title + ' (' + rows.length + ')</h3>';
-  rows.forEach(function(r) { h += _modRowHtml(r._t, r.id, r._ttl, r._meta, r.description, mode); });
+  rows.forEach(function(r) { h += _modRowHtml(r._t, r.id, r._ttl, r._meta, r.description, mode, r._full); });
   return h;
 }
 
-function _modRowHtml(table, id, title, meta, desc, mode) {
-  var tag = table === 'services' ? '🗂️' : '📅';
+function _modRowHtml(table, id, title, meta, desc, mode, fullText) {
+  var tag = table === 'services' ? '🗂️' : (table === 'articles' ? '📰' : '📅');
+  var body = fullText
+    ? '<div style="font-size:12px;color:#555;margin-bottom:10px;max-height:150px;overflow-y:auto;white-space:pre-wrap;border:1px solid #eee;border-radius:8px;padding:8px;background:#fafafa;">' + _modEsc(fullText) + '</div>'
+    : '<div style="font-size:12px;color:#555;margin-bottom:10px;">' + _modEsc((desc || '').slice(0, 160)) + '</div>';
   var btns;
   if (mode === 'published') {
     btns = '<button class="mod-unpublish" style="flex:1;background:#fff;color:#D52B1E;border:1.5px solid #D52B1E;padding:8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">⨯ Снять с публикации</button>';
@@ -637,7 +642,7 @@ function _modRowHtml(table, id, title, meta, desc, mode) {
   return '<div class="mod-row" data-table="' + table + '" data-id="' + id + '" style="border:1px solid #eee;border-radius:12px;padding:12px 14px;margin-bottom:10px;">' +
     '<div style="font-weight:700;font-size:14px;">' + tag + ' ' + _modEsc(title) + '</div>' +
     '<div style="font-size:12px;color:#888;margin:2px 0 6px;">' + _modEsc(meta) + '</div>' +
-    '<div style="font-size:12px;color:#555;margin-bottom:10px;">' + _modEsc((desc || '').slice(0, 160)) + '</div>' +
+    body +
     '<div style="display:flex;gap:8px;">' + btns + '</div></div>';
 }
 
@@ -718,36 +723,45 @@ function showArticleForm() {
     '<select style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;" id="art-topic"><option>Документы</option><option>Жильё</option><option>Работа</option><option>Дети</option><option>Налоги</option><option>Путешествия</option><option>Лайфхаки</option></select></div>' +
     '<div style="margin-bottom:20px;"><label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#444;display:block;margin-bottom:6px;">Текст *</label>' +
     '<textarea placeholder="Расскажи свой опыт..." rows="8" style="width:100%;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;" id="art-text"></textarea></div>' +
-    '<button onclick="submitArticle()" style="width:100%;background:#1AABEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Отправить на модерацию →</button>' +
-    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Статья будет опубликована после проверки</p>' +
+    '<div id="art-form-err" style="display:none;font-size:12px;color:#D52B1E;margin-bottom:10px;"></div>' +
+    '<button id="art-submit" onclick="submitArticle()" style="width:100%;background:#1AABEF;color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Отправить на модерацию →</button>' +
+    '<p style="font-size:11px;color:#999;text-align:center;margin-top:10px;">Статья будет опубликована после проверки. Отправляя, ты принимаешь <a onclick="showLegal()" style="color:var(--brand);cursor:pointer;">условия</a>.</p>' +
     '</div>';
   document.body.appendChild(overlay);
+  _wireDraft('article', ['art-title', 'art-topic', 'art-text']); // draft-persistence
   document.getElementById('art-close-btn').onclick = function() { overlay.remove(); };
   overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.remove(); });
 }
 
 function submitArticle() {
-  var title = document.getElementById('art-title') ? document.getElementById('art-title').value : '';
-  var text = document.getElementById('art-text') ? document.getElementById('art-text').value : '';
-  var topic = document.getElementById('art-topic') ? document.getElementById('art-topic').value : '';
-  if (!title || !text) { alert('Заполни заголовок и текст'); return; }
-  var overlay = document.getElementById('article-form-overlay');
-  if (overlay) overlay.remove();
-  if (_supabase && _profile) {
-    _supabase.from('articles').insert({
-      title: title,
-      topic: topic,
-      content: text,
-      author_id: _profile.id,
-      author_name: (_profile.first_name || '') + ' ' + (_profile.last_name || ''),
-      status: 'pending'
-    }).then(function(res) {
-      if (res.error) { showNotif('Ошибка: ' + res.error.message, 'error'); return; }
-      showNotif('✅ Статья отправлена на модерацию!');
-    });
-  } else {
+  var btn = document.getElementById('art-submit');
+  if (btn && btn.disabled) { return; } // защита от двойного клика
+  var title = (document.getElementById('art-title') || {}).value || '';
+  var text = (document.getElementById('art-text') || {}).value || '';
+  var topic = (document.getElementById('art-topic') || {}).value || '';
+  title = title.trim(); text = text.trim();
+  if (!title || !text) { _setFormErr('art-form-err', 'Заполни заголовок и текст'); return; }
+  if (!_supabase || !_profile) { _setFormErr('art-form-err', 'Войди, чтобы опубликовать статью'); return; }
+  _setFormErr('art-form-err', '');
+  if (btn) { btn.disabled = true; btn.dataset.label = btn.textContent; btn.textContent = 'Отправляем…'; }
+  // status НЕ шлём — БД ставит 'pending_moderation' по умолчанию (RLS не даёт approved)
+  _supabase.from('articles').insert({
+    title: title.slice(0, 200),
+    topic: topic,
+    content: text.slice(0, 20000),
+    author_id: _profile.id,
+    author_name: ((_profile.first_name || '') + ' ' + (_profile.last_name || '')).trim()
+  }).then(function(res) {
+    if (res.error) {
+      if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Отправить на модерацию →'; }
+      _setFormErr('art-form-err', 'Не удалось отправить: ' + res.error.message);
+      return;
+    }
+    var overlay = document.getElementById('article-form-overlay');
+    if (overlay) overlay.remove();
+    _clearDraft('article');
     showNotif('✅ Статья отправлена на модерацию!');
-  }
+  });
 }
 
 function showNotif(msg, type) {
@@ -963,6 +977,7 @@ function goPage(name) {
   if (name === 'home' || name === 'afisha') { setTimeout(updateEmptyStates, 50); }
   if (name === 'catalog') { setTimeout(loadPublicCatalog, 30); }
   if (name === 'afisha') { setTimeout(loadPublicAfisha, 30); }
+  if (name === 'articles') { setTimeout(loadPublicArticles, 30); }
   if (name === 'profile') { setTimeout(loadProfileForm, 50); }
   window.scrollTo(0, 0);
 }
@@ -1020,6 +1035,25 @@ function _eventCardHtml(r) {
     (r.location ? '<div style="font-size:12px;color:#888;">' + _pubEsc(r.location) + '</div>' : '') +
     '<div style="font-size:13px;color:var(--mid);line-height:1.5;">' + _pubEsc((r.description || '').slice(0, 180)) + '</div>' +
     '</div>';
+}
+
+// catalog-display / user-content-moderation: одобренные статьи на странице «Статьи»
+function loadPublicArticles() {
+  var grid = document.getElementById('art-grid');
+  if (!grid || !_supabase) { return; }
+  _supabase.from('articles').select('id,title,topic,author_name,content').eq('status', 'approved').order('created_at', { ascending: false }).then(function(res) {
+    var rows = (res && res.data) || [];
+    if (!rows.length) { return; } // нет одобренных — оставляем статичные демо-карточки
+    grid.innerHTML = rows.map(_articleCardHtml).join('');
+  });
+}
+function _articleCardHtml(r) {
+  return '<div class="art-card" data-id="' + r.id + '"><div class="art-body">' +
+    (r.topic ? '<span class="art-tag">' + _pubEsc(r.topic) + '</span>' : '') +
+    '<div class="art-title">' + _pubEsc(r.title) + '</div>' +
+    '<div style="font-size:12px;color:var(--mid);line-height:1.5;margin:6px 0;">' + _pubEsc((r.content || '').slice(0, 120)) + '</div>' +
+    '<div class="art-meta"><span>' + _pubEsc(r.author_name || 'Участник') + '</span><span class="art-free">Бесплатно</span></div>' +
+    '</div></div>';
 }
 
 // ================================================================
@@ -1243,9 +1277,10 @@ function _updateModBadge() {
   if (!_supabase) { return; }
   Promise.all([
     _supabase.from('services').select('id', { count: 'exact', head: true }).eq('status', 'pending_moderation'),
-    _supabase.from('events').select('id', { count: 'exact', head: true }).eq('status', 'pending_moderation')
+    _supabase.from('events').select('id', { count: 'exact', head: true }).eq('status', 'pending_moderation'),
+    _supabase.from('articles').select('id', { count: 'exact', head: true }).eq('status', 'pending_moderation')
   ]).then(function(res) {
-    var n = ((res[0] && res[0].count) || 0) + ((res[1] && res[1].count) || 0);
+    var n = ((res[0] && res[0].count) || 0) + ((res[1] && res[1].count) || 0) + ((res[2] && res[2].count) || 0);
     var el = document.getElementById('mod-btn');
     if (el) { el.textContent = n > 0 ? '🛡 Модерация (' + n + ')' : '🛡 Модерация'; }
   });
@@ -3679,7 +3714,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
     </div>
     <!-- Featured articles -->
     <div class="sec-head"><div class="sec-title">Популярные <span class="dot">статьи</span></div><a class="see-all">Все →</a></div>
-    <div class="art-grid">
+    <div class="art-grid" id="art-grid">
       <div class="art-card featured"><div class="art-img" style="background:linear-gradient(135deg,#e8f5fd,#c8e4f4);">🏔️</div><div class="art-body"><span class="art-tag">🏔️ Путешествия</span><div class="art-title">25 мест в Швейцарии, которые стоит посетить хотя бы раз</div><div class="art-meta"><div style="display:flex;align-items:center;gap:6px;"><div style="width:20px;height:20px;border-radius:5px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;">АИ</div><span>Анна Иванова</span></div><span class="art-free">Бесплатно</span></div></div></div>
       <div class="art-card"><div class="art-img" style="background:linear-gradient(135deg,#fff8e6,#ffeec0);">⚖️</div><div class="art-body"><span class="art-tag">⚖️ Документы</span><div class="art-title">ВНЖ в Швейцарии: полный гайд 2025</div><div class="art-meta"><span>Мария С.</span><span class="art-free">Бесплатно</span></div></div></div>
       <div class="art-card"><div class="art-img" style="background:linear-gradient(135deg,#eefaf0,#c8f0d4);">💰</div><div class="art-body"><span class="art-tag">💰 Финансы</span><div class="art-title">Налоги фрилансера в Швейцарии</div><div class="art-meta"><span>Дмитрий В.</span><span class="art-price">5 CHF</span></div></div></div>
