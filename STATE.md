@@ -4,7 +4,7 @@
 > Это канонический снимок состояния проекта. Живёт в git → переживает потерю сессии,
 > переустановку приложения и смену компьютера. Восстановление = `git clone` + прочитать этот файл.
 
-**Обновлено:** 2026-06-24
+**Обновлено:** 2026-07-01
 **Репо:** `github.com/creox-ch/slswiss`, ветка `main`
 **Прод (тест):** https://creox-ch.github.io/slswiss/ · цель — `slswiss.ch` (Netlify, позже)
 **Владелец:** Kseniia Chudina (Creox)
@@ -24,6 +24,28 @@
 | **Разъезд регистрации** | Google-вход пропускает кантон/PLZ/интересы (у email — есть); Apple — заглушка; Telegram не подключён → задачи `unify-registration` + `telegram-auth` в BACKLOG |
 | **Ориентир по срокам** | **~01.07.2026** — открыть регистрацию (ориентир, не жёсткий дедлайн) |
 | **Дальний ориентир** | **~01.09.2026** — платформа открыта для всех (ориентир) |
+
+### ▶️ Продолжение работы (для новой сессии) — 2026-07-01
+
+**Активного спринта нет.** За 2026-07-01 закрыто много (см. таблицу выше + BACKLOG «Сделано»). main зелёный, всё под E2E (`tests/01…15`).
+
+**Ждём решения Ksenia (блокируют часть задач):**
+- `forms-fields-spec` — подтвердить состав/обязательность полей форм (черновик `contracts/forms-fields-spec.md`, отправлен в ТГ; 4 вопроса в конце).
+- `legal-consent` — юрпроверка текстов `docs/legal/*.md` (черновики) + добавить UID/CHE/телефон, возможно нем. версия.
+- Модерация: отклонение **с причиной** + **уведомление автора** — отложено (см. `contracts/moderator-role.md` ⏳ и коммент №4).
+- **Платежи (Payrexx):** что первым — 99 (бизнес разово) vs 19 (подписка) + подтвердить подход **Supabase Edge Functions** (slswiss статический; Next.js-роуты из билетного проекта «как есть» не переносятся). Путь оплаты — в `contracts/business-role.md`.
+
+**Можно брать без решений (decision-light):**
+- `unify-registration` — единый профиль для Google/Apple/Telegram (Google пропускает кантон/PLZ/интересы) → общий экран дозаполнения после любого входа.
+- `telegram-auth` — вход через Telegram.
+- Хвост `user-content-moderation`: автор видит статус своих **статей** в профиле (для services/events уже сделано в `moderator-role`).
+
+**Что применено в БД Supabase (не потерять):**
+- Статус-модель (`pending_moderation/approved/rejected`) + RLS на `services`, `events`, `articles`. Миграции: `docs/{forms-mvp,moderation,articles}-migration.sql`.
+- Функция `public.is_admin()`; `profiles.is_admin` — флаг модератора.
+- ⚠ **Тест-юзер `assistant@creox.ch` (секрет `TEST_USER_*`) должен быть `is_admin=true`** — иначе ~34 login-теста падают (симптом: «кнопка Выйти не найдена»).
+
+**Как продолжить:** прочитать этот файл + `docs/BACKLOG.md` («Сделано» и «Комментарии Ksenia») + нужный контракт в `docs/contracts/`. Взять пункт из «decision-light» или дождаться решений Ksenia.
 
 ### ✅ Сделано — `forms-mvp-backend` (2026-06-29)
 Формы «Добавить в каталог» и «Добавить событие» пишут заявки в Supabase.
@@ -53,22 +75,20 @@ slswiss/
 ├── AGENT-PROMPT.md       # шаблон запуска спринта
 ├── HANDOFF.md            # заметки по тестам, известные баги
 ├── index.html            # ⭐ ГЛАВНОЕ приложение (~440 КБ, single-file SPA)
-├── tests/                # Playwright: 01-auth … 07-google-auth + helpers.js
-├── .github/workflows/test.yml   # CI
-└── docs/                 # ⭐ источник истины по процессу (перенесён из Project knowledge 24.06)
-    ├── PROCESS.md
-    ├── BACKLOG.md
-    ├── roadmap-to-2026-09-01.md
-    ├── IVANNA-NEXT-SPRINT.md
+├── tests/                # Playwright: 01-auth … 15-articles-moderation + helpers.js (CI гоняет их на пуш)
+├── .github/workflows/test.yml   # CI (paths-ignore: только .github/** и **.md)
+└── docs/                 # ⭐ источник истины по процессу
+    ├── PROCESS.md · BACKLOG.md · roadmap-to-2026-09-01.md · IVANNA-NEXT-SPRINT.md
+    ├── registration-go-live.md            # рунбук Resend/DNS
+    ├── {forms-mvp,moderation,articles}-migration.sql   # ПРИМЕНЁННЫЕ миграции статус-модели + RLS
+    ├── legal/{impressum,datenschutz,agb}.md            # юр-черновики (нужна юрпроверка)
     ├── meetings/meeting-extract-2026-06-18.md
     └── contracts/
-        ├── _template.md            # шаблон + чек-лист 7 вопросов
-        ├── registration-fix.md
-        ├── forms-mvp-backend.md
-        ├── moderation.md
-        ├── catalog-display.md
-        ├── moderator-role.md       # 🆕 зонтичный контракт РОЛИ (все пути модератора)
-        └── business-role.md        # 🆕 зонтичный контракт РОЛИ (все пути бизнеса)
+        ├── _template.md · registration-fix · forms-mvp-backend · moderation · catalog-display
+        ├── forms-fields-spec.md            # ⏳ ждёт подтверждения Ksenia (поля форм)
+        ├── user-content-moderation.md      # ✅ closed (статьи)
+        ├── moderator-role.md               # зонтичный контракт РОЛИ модератора
+        └── business-role.md                # зонтичный контракт РОЛИ бизнеса (путь оплаты 99)
 ```
 
 > ⚠️ **Главный файл — `index.html`.** Старые доки иногда называют его `soiludi_v4.html` —
@@ -156,6 +176,11 @@ node --check /tmp/main.js
 ---
 
 ## История STATE.md
+- **2026-07-01** — большая сессия: закрыты `catalog-display`, `moderator-role` (бейдж, снять/вернуть,
+  in-app статус автора), `cantons-fix`, `draft-persistence`, `legal-consent` (согласия+cookie+юр-док в футере),
+  `user-content-moderation` (статьи в модерации: автор+полный текст). Фикс canton/plz. Все с E2E, main зелёный.
+  Обработаны 6 комментариев Ksenia (см. BACKLOG «Комментарии Ksenia»). Ждём Ksenia: спека полей, юрпроверка,
+  решения по платежам. Добавлен раздел «Продолжение работы» выше.
 - **2026-06-29** — `forms-mvp-backend` закрыт: формы каталога/событий пишут в Supabase по **статус-модели**
   (status на `services`/`events`, авторизованная вставка, RLS). E2E `08-forms` зелёные. Контракт уточнён
   против черновика (не `*_submissions`, не аноним). Активного спринта нет — выбрать следующий.
