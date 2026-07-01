@@ -45,10 +45,18 @@ slswiss/
     ├── roadmap-to-2026-09-01.md
     ├── IVANNA-NEXT-SPRINT.md
     ├── meetings/meeting-extract-2026-06-18.md
-    └── contracts/{_template, registration-fix, forms-mvp-backend}.md
+    └── contracts/
+        ├── {_template, registration-fix, forms-mvp-backend, moderation, catalog-display}.md
+        ├── moderator-role.md   # 🆕 role contract — ALL moderator paths (story map + 7-question checklist)
+        └── business-role.md    # 🆕 role contract — ALL business paths
 ```
 
 > ⚠️ Main app is `index.html`. Older notes call it `soiludi_v4.html` — that file does NOT exist.
+
+> 🆕 **Role contracts** (`*-role.md`) are umbrella contracts covering a whole role, not a single sprint.
+> They map every user path (story map) and run each through a 7-question checklist
+> (happy / failure / bounds / empty / permissions / error text / mobile). `[x]` = shipped & green in CI,
+> `[ ]` ⏳ = future sub-sprint. Use them as the backlog source and as the "don't miss details" template.
 
 ---
 
