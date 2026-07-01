@@ -122,6 +122,31 @@ test.describe('БЛОК 13 — Модерация: решения', () => {
       await sbDelete(request, 'services', id);
     }
   });
+
+  test('13.4 — снять событие с публикации: approved → rejected, исчезает из афиши', async ({ page, request }) => {
+    const title = `E2E-MOD-UNPUB-EVT-${Date.now()}`;
+    const future = new Date(Date.now() + 10 * 86400000).toISOString();
+    const ins = await request.post(`${SUPABASE_URL}/rest/v1/events`, {
+      headers: { ...adminHeaders(), Prefer: 'return=representation' },
+      data: { title, description: 'published event', canton: 'Zug', event_date: future, status: 'approved' },
+    });
+    const created = ins.ok() ? await ins.json() : [];
+    const id = created[0] && created[0].id;
+    expect(id).toBeTruthy();
+    try {
+      await page.evaluate(() => window.openModeration());
+      const row = page.locator(`.mod-row[data-id="${id}"]`);
+      await expect(row).toBeVisible({ timeout: 15000 });          // в секции «Опубликовано»
+      await row.locator('.mod-unpublish').click();
+      await expect(row).toHaveCount(0, { timeout: 15000 });
+      expect(await sbStatus(request, 'events', id)).toBe('rejected');
+      // из афиши исчез (публичны только approved)
+      await page.evaluate(() => window.goPage('afisha'));
+      await expect(page.locator(`.event-card[data-id="${id}"]`)).toHaveCount(0);
+    } finally {
+      await sbDelete(request, 'events', id);
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────
