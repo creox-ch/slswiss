@@ -2976,6 +2976,17 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
+  /* --- Hero-шапки страниц заданы инлайном: ужать отступы/заголовок и разрешить перенос,
+         иначе «заголовок + кнопка» и ряд статов уезжают за экран (горизонтальный скролл) --- */
+  [style*="40px 48px"] { padding-left: 16px !important; padding-right: 16px !important; padding-top: 24px !important; padding-bottom: 24px !important; }
+  [style*="font-size:34px"] { font-size: 24px !important; }
+  [style*="justify-content:space-between"] { flex-wrap: wrap; }
+  [style*="display:flex;gap:14px"] { flex-wrap: wrap; }
+
+  /* --- Класс-шапки страниц (.page-header: кантоны и др.) --- */
+  .page-header { padding: 24px 16px !important; flex-wrap: wrap; gap: 12px; }
+  .page-header h1 { font-size: 24px !important; }
+
   /* --- Футер --- */
   footer { padding-left: 16px; padding-right: 16px; }
 }
