@@ -1057,6 +1057,19 @@ var _profile = null;
 // ================================================================
 // NAVIGATION
 // ================================================================
+// mobile-adaptive: гамбургер-меню (шапка на ≤768px)
+function toggleNav() {
+  var u = document.querySelector('nav .nav-links');
+  var b = document.getElementById('nav-burger');
+  if (!u) { return; }
+  var open = u.classList.toggle('open');
+  if (b) { b.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+}
+function closeNav() {
+  var u = document.querySelector('nav .nav-links'); if (u) { u.classList.remove('open'); }
+  var b = document.getElementById('nav-burger'); if (b) { b.setAttribute('aria-expanded', 'false'); }
+}
+
 function goPage(name) {
   // Explicitly hide ALL pages with display:none
   document.querySelectorAll('.page').forEach(function(p) {
@@ -1066,6 +1079,7 @@ function goPage(name) {
   document.querySelectorAll('.nav-links a').forEach(function(a) {
     a.classList.remove('active');
   });
+  closeNav(); // mobile-adaptive: закрыть гамбургер-меню при переходе
   var page = document.getElementById('page-' + name);
   if (page) {
     page.classList.add('active');
@@ -2227,6 +2241,7 @@ nav{background:#fff;border-bottom:1px solid #E8EAED;height:68px;display:flex;ali
 .nav-right{display:flex;gap:8px;align-items:center;}
 .btn-login{background:transparent;color:var(--brand-dark);border:1.5px solid var(--brand);padding:7px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
 .btn-join{background:var(--brand);color:#fff;border:none;padding:8px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 2px 12px rgba(0,174,239,.3);transition:all .15s;}
+.nav-burger{display:none;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--brand-dark);padding:4px 8px;}
 
 /* PAGES */
 .page{display:none !important;animation:fadeIn .2s ease;}
@@ -2913,6 +2928,57 @@ footer{background:#0A1628;padding:32px 56px;display:flex;justify-content:space-b
 
 /* ── BODY background ── */
 body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-height:100vh;}
+
+/* ============================================================
+   MOBILE-ADAPTIVE — единственный брейкпоинт (спринт mobile-adaptive).
+   Раньше в файле не было ни одного @media. Инлайновые grid в HTML
+   бьём !important, иначе inline-стиль побеждает правило класса.
+   ============================================================ */
+@media (max-width: 768px) {
+  /* --- Шапка + гамбургер --- */
+  nav { padding: 0 14px; }
+  .nav-burger { display: block; }
+  nav .nav-links {
+    position: absolute; top: 68px; left: 0; right: 0;
+    flex-direction: column; gap: 2px;
+    background: #fff; border-bottom: 1px solid #E8EAED;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    padding: 8px 12px; display: none; z-index: 299;
+  }
+  nav .nav-links.open { display: flex; }
+  nav .nav-links a { display: block; padding: 12px 10px; font-size: 15px; }
+  #nav-right .btn-login, #nav-right .btn-join { padding: 7px 12px; font-size: 12px; }
+
+  /* --- Hero --- */
+  .hero { padding: 40px 18px; }
+  .hero-inner { grid-template-columns: 1fr !important; gap: 26px; }
+  .hero h1 { font-size: 30px !important; letter-spacing: -1px; }
+  .hero p { font-size: 14px; }
+
+  /* --- Секции и панели: меньше горизонтальных отступов --- */
+  .section { padding: 24px 16px; }
+  .filter-bar { padding: 10px 14px; }
+  .club-hero { padding: 28px 18px; grid-template-columns: 1fr !important; gap: 20px; }
+  .profile-wrap { padding: 24px 16px; }
+
+  /* --- Многоколоночные сетки → одна колонка --- */
+  .news-grid, .art-grid, .guides-grid,
+  .biz-grid, #biz-grid, .cantons-grid, #cantons-grid,
+  .buddy-cats-grid, .perks-grid, .tour-cats, .routes-grid,
+  .partners-grid, .sub-plans, .admin-panels,
+  .profile-layout, .profile-wrap, .trip-home-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* --- Мелкие числовые сетки → две колонки --- */
+  .stats-grid, .facts-grid, .earn-grid, .spend-grid,
+  .admin-stats, .ref-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* --- Футер --- */
+  footer { padding-left: 16px; padding-right: 16px; }
+}
 </style>
 </head>
 <body>
@@ -2952,6 +3018,7 @@ body{font-family:'Inter',sans-serif;background:#fff;color:var(--charcoal);min-he
     <li><a onclick="goPage('deals')" id="n-deals">🎁 Акции</a></li>
     
   </ul>
+  <button id="nav-burger" class="nav-burger" onclick="toggleNav()" aria-label="Меню" aria-expanded="false">☰</button>
   <div id="nav-right">
     <button class="btn-login" onclick="showModal()">Войти</button>
     <button class="btn-join" onclick="showModal()">Вступить</button>
